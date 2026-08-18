@@ -1,0 +1,25 @@
+{
+  "name": "Civic Issue Reporter",
+  "short_name": "CivicReporter",
+  "description": "Report local issues like potholes, streetlights, or waste with GPS coordinates and photos.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#030303",
+  "theme_color": "#09090b",
+  "categories": ["utilities", "productivity"],
+  "icons": [
+    {
+      "src": "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=192&h=192&q=80",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?auto=format&fit=crop&w=512&h=512&q=80",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
