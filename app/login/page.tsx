@@ -14,10 +14,13 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showConfirmOption, setShowConfirmOption] = useState(false)
+  const [confirming, setConfirming] = useState(false)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setShowConfirmOption(false)
     setLoading(true)
 
     try {
@@ -27,9 +30,30 @@ export default function LoginPage() {
           password,
         })
 
-        if (err) throw err
+        if (err) {
+          if (err.message?.toLowerCase().includes('confirm')) {
+            setShowConfirmOption(true)
+          }
+          throw err
+        }
 
-        router.push('/')
+        // Fetch user profile to check role and redirect accordingly
+        if (data?.user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', data.user.id)
+            .maybeSingle()
+
+          if (profile?.role === 'admin') {
+            router.push('/admin')
+          } else {
+            router.push('/')
+          }
+        } else {
+          router.push('/')
+        }
+        
         router.refresh()
       } else {
         // Mock mode login simulation
@@ -63,12 +87,61 @@ export default function LoginPage() {
     }
   }
 
+  const handleAutoConfirm = async () => {
+    setConfirming(true)
+    setError('')
+    try {
+      const res = await fetch('/api/auth/confirm', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      })
+      const result = await res.json()
+
+      if (!res.ok) {
+        throw new Error(result.error || 'Failed to confirm email')
+      }
+
+      // Auto login after confirmation
+      const { data: confirmData, error: loginErr } = await supabase!.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (loginErr) throw loginErr
+
+      if (confirmData?.user) {
+        const { data: profile } = await supabase!
+          .from('profiles')
+          .select('role')
+          .eq('id', confirmData.user.id)
+          .maybeSingle()
+
+        if (profile?.role === 'admin') {
+          router.push('/admin')
+        } else {
+          router.push('/')
+        }
+      } else {
+        router.push('/')
+      }
+
+      router.refresh()
+    } catch (err: any) {
+      setError(err.message || 'Failed to verify email.')
+    } finally {
+      setConfirming(false)
+    }
+  }
+
   // Pre-fill mock credentials for easy testing
   const selectMockRole = (selectedRole: 'citizen' | 'admin') => {
     setRole(selectedRole)
     if (selectedRole === 'admin') {
-      setEmail('admin@civic.gov')
-      setPassword('admin123')
+      setEmail('shashiadmin@gmail.com')
+      setPassword('admin@123321')
     } else {
       setEmail('citizen@gmail.com')
       setPassword('citizen123')
@@ -87,7 +160,17 @@ export default function LoginPage() {
 
         {error && (
           <div className="mb-6 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold leading-relaxed">
-            {error}
+            <div>{error}</div>
+            {showConfirmOption && (
+              <button
+                type="button"
+                onClick={handleAutoConfirm}
+                disabled={confirming}
+                className="mt-3 w-full py-2.5 px-4 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold transition text-xs shadow-md shadow-purple-600/20 hover:shadow-purple-600/30 active:scale-95 cursor-pointer"
+              >
+                {confirming ? 'Confirming Email...' : 'Confirm Email & Log In Now'}
+              </button>
+            )}
           </div>
         )}
 

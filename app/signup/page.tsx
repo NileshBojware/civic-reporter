@@ -3,7 +3,7 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Lock, Mail, User, Shield, UserPlus, Eye, EyeOff } from 'lucide-react'
+import { Lock, Mail, User, UserPlus, Eye, EyeOff } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 
 export default function SignupPage() {
@@ -11,7 +11,7 @@ export default function SignupPage() {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState<'citizen' | 'admin'>('citizen')
+
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -31,24 +31,36 @@ export default function SignupPage() {
           options: {
             data: {
               full_name: fullName,
-              role: role,
+              role: 'citizen',
             },
           },
         })
 
         if (err) throw err
 
+        // Auto-confirm email programmatically
+        try {
+          await fetch('/api/auth/confirm', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email }),
+          })
+        } catch (confirmErr) {
+          console.error('Failed to auto-confirm email:', confirmErr)
+        }
+
         setSuccess(true)
-        // If auto-confirm is enabled in Supabase, they can log in, else they need to check email.
         setTimeout(() => {
           router.push('/login')
-        }, 3000)
+        }, 2000)
       } else {
         // Mock mode signup simulation
         const mockUser = {
           id: `user-${Date.now()}`,
           full_name: fullName || 'New User',
-          role: role,
+          role: 'citizen',
           email: email || 'user@example.com',
           created_at: new Date().toISOString(),
         }
@@ -69,11 +81,7 @@ export default function SignupPage() {
 
         setSuccess(true)
         setTimeout(() => {
-          if (role === 'admin') {
-            router.push('/admin')
-          } else {
-            router.push('/')
-          }
+          router.push('/')
           router.refresh()
         }, 1500)
       }
@@ -101,9 +109,9 @@ export default function SignupPage() {
         )}
 
         {success && (
-          <div className="mb-6 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-450 text-xs font-semibold leading-relaxed">
+          <div className="mb-6 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold leading-relaxed">
             {isSupabaseConfigured
-              ? 'Registration successful! Please check your email to verify your account.'
+              ? 'Registration successful! (Email automatically verified for convenience). Redirecting to login...'
               : 'Sign up successful! Logging you in...'}
           </div>
         )}
@@ -161,35 +169,7 @@ export default function SignupPage() {
             </div>
           </div>
 
-          <div>
-            <label className="text-xs font-bold text-zinc-400 block mb-1.5">Register As</label>
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                type="button"
-                onClick={() => setRole('citizen')}
-                className={`py-3 px-4 rounded-2xl border text-xs font-extrabold transition flex items-center justify-center gap-2 ${
-                  role === 'citizen'
-                    ? 'bg-purple-500/10 text-purple-300 border-purple-500/30 shadow-inner'
-                    : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-zinc-300'
-                }`}
-              >
-                <User className="w-4 h-4" />
-                <span>Citizen</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setRole('admin')}
-                className={`py-3 px-4 rounded-2xl border text-xs font-extrabold transition flex items-center justify-center gap-2 ${
-                  role === 'admin'
-                    ? 'bg-purple-500/10 text-purple-300 border-purple-500/30 shadow-inner'
-                    : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-zinc-300'
-                }`}
-              >
-                <Shield className="w-4 h-4" />
-                <span>Municipal Admin</span>
-              </button>
-            </div>
-          </div>
+
 
           <button
             type="submit"

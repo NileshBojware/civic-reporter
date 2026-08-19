@@ -45,6 +45,10 @@ alter table public.report_votes enable row level security;
 -- 3. RLS Policies
 
 -- Profiles policies
+drop policy if exists "Allow public read access to profiles" on public.profiles;
+drop policy if exists "Allow users to insert their own profile" on public.profiles;
+drop policy if exists "Allow users to update their own profile" on public.profiles;
+
 create policy "Allow public read access to profiles" 
   on public.profiles for select 
   using (true);
@@ -58,6 +62,10 @@ create policy "Allow users to update their own profile"
   using (auth.uid() = id);
 
 -- Reports policies
+drop policy if exists "Allow public read access to reports" on public.reports;
+drop policy if exists "Allow authenticated users to create reports" on public.reports;
+drop policy if exists "Allow admins to update reports" on public.reports;
+
 create policy "Allow public read access to reports" 
   on public.reports for select 
   using (true);
@@ -76,6 +84,10 @@ create policy "Allow admins to update reports"
   );
 
 -- Report Votes policies
+drop policy if exists "Allow public read access to votes" on public.report_votes;
+drop policy if exists "Allow authenticated users to vote" on public.report_votes;
+drop policy if exists "Allow authenticated users to remove their vote" on public.report_votes;
+
 create policy "Allow public read access to votes" 
   on public.report_votes for select 
   using (true);
@@ -92,12 +104,20 @@ create policy "Allow authenticated users to remove their vote"
 -- This function runs when a new user signs up via Supabase Auth
 create or replace function public.handle_new_user()
 returns trigger as $$
+declare
+  default_role text := 'citizen';
 begin
+  -- Check if the email belongs to the predefined admin list
+  -- TODO: Replace these placeholders with your actual admin emails in Supabase
+  if new.email in ('shashiadmin@gmail.com', 'nileshadmin@gmail.com', 'aakleshadmin@gmail.com') then
+    default_role := 'admin';
+  end if;
+
   insert into public.profiles (id, full_name, role)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'full_name', 'New Citizen'),
-    coalesce(new.raw_user_meta_data->>'role', 'citizen')
+    default_role
   );
   return new;
 end;
@@ -107,3 +127,50 @@ $$ language plpgsql security definer;
 create or replace trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+-- Instruction to upgrade existing users to admin in Supabase SQL editor:
+-- UPDATE public.profiles 
+-- SET role = 'admin' 
+-- FROM auth.users 
+-- WHERE public.profiles.id = auth.users.id 
+-- AND auth.users.email IN ('shashiadmin@gmail.com', 'nileshadmin@gmail.com', 'aakleshadmin@gmail.com');
+
+
+-- 5. Storage Buckets and Policies Setup
+-- Note: Run this in the Supabase SQL Editor to initialize storage buckets and policies
+
+-- Create buckets if they do not exist
+insert into storage.buckets (id, name, public)
+values ('reports-evidence', 'reports-evidence', true)
+on conflict (id) do nothing;
+
+insert into storage.buckets (id, name, public)
+values ('reports-resolutions', 'reports-resolutions', true)
+on conflict (id) do nothing;
+
+-- Drop existing policies if they exist to prevent errors on re-run
+drop policy if exists "Allow public read access to reports-evidence" on storage.objects;
+drop policy if exists "Allow authenticated users to upload to reports-evidence" on storage.objects;
+drop policy if exists "Allow public read access to reports-resolutions" on storage.objects;
+drop policy if exists "Allow authenticated users to upload to reports-resolutions" on storage.objects;
+
+-- Policies for 'reports-evidence'
+create policy "Allow public read access to reports-evidence"
+on storage.objects for select
+using (bucket_id = 'reports-evidence');
+
+create policy "Allow authenticated users to upload to reports-evidence"
+on storage.objects for insert
+to authenticated
+with check (bucket_id = 'reports-evidence');
+
+-- Policies for 'reports-resolutions'
+create policy "Allow public read access to reports-resolutions"
+on storage.objects for select
+using (bucket_id = 'reports-resolutions');
+
+create policy "Allow authenticated users to upload to reports-resolutions"
+on storage.objects for insert
+to authenticated
+with check (bucket_id = 'reports-resolutions');
+
