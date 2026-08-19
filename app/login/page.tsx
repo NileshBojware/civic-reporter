@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Lock, Mail, Shield, User, Eye, EyeOff } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
+import { useLanguage } from '@/lib/LanguageContext'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -16,6 +17,7 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [showConfirmOption, setShowConfirmOption] = useState(false)
   const [confirming, setConfirming] = useState(false)
+  const { t } = useLanguage()
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -57,7 +59,6 @@ export default function LoginPage() {
         router.refresh()
       } else {
         // Mock mode login simulation
-        // If email or password contains "admin", log in as Admin
         const isAdmin = email.toLowerCase().includes('admin') || role === 'admin'
         const mockUser = {
           id: isAdmin ? 'admin-id-123' : `citizen-${Date.now()}`,
@@ -68,8 +69,6 @@ export default function LoginPage() {
         }
 
         localStorage.setItem('civic_reporter_user', JSON.stringify(mockUser))
-        
-        // Dispatch event so navbar updates
         window.dispatchEvent(new Event('auth-change'))
 
         // Redirect based on role
@@ -154,8 +153,8 @@ export default function LoginPage() {
         <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
 
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-extrabold text-white">Welcome Back</h2>
-          <p className="text-zinc-400 text-xs mt-1.5">Sign in to report issues or manage tasks</p>
+          <h2 className="text-2xl font-extrabold text-white">{t('login.title')}</h2>
+          <p className="text-zinc-400 text-xs mt-1.5">{t('login.subtitle')}</p>
         </div>
 
         {error && (
@@ -183,7 +182,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => selectMockRole('citizen')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-bold transition ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-bold transition cursor-pointer ${
                   role === 'citizen'
                     ? 'bg-purple-500/10 text-purple-300 border-purple-500/30'
                     : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-300'
@@ -195,7 +194,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => selectMockRole('admin')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-bold transition ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[10px] font-bold transition cursor-pointer ${
                   role === 'admin'
                     ? 'bg-purple-500/10 text-purple-300 border-purple-500/30'
                     : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-300'
@@ -210,7 +209,7 @@ export default function LoginPage() {
 
         <form onSubmit={handleLogin} className="space-y-5">
           <div>
-            <label className="text-xs font-bold text-zinc-400 block mb-1.5">Email Address</label>
+            <label className="text-xs font-bold text-zinc-400 block mb-1.5">{t('login.fieldEmail')}</label>
             <div className="relative">
               <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-zinc-500" />
               <input
@@ -225,7 +224,7 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="text-xs font-bold text-zinc-400 block mb-1.5">Password</label>
+            <label className="text-xs font-bold text-zinc-400 block mb-1.5">{t('login.fieldPass')}</label>
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-zinc-500" />
               <input
@@ -239,7 +238,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition cursor-pointer"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -249,17 +248,17 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 mt-2 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-sm font-extrabold shadow-lg shadow-purple-600/20 hover:shadow-purple-600/30 hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-50 disabled:shadow-none transition-all duration-200"
+            className="w-full py-3.5 mt-2 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-sm font-extrabold shadow-lg shadow-purple-600/20 hover:shadow-purple-600/30 hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-50 disabled:shadow-none transition-all duration-200 cursor-pointer"
           >
-            {loading ? 'Signing In...' : 'Sign In'}
+            {loading ? t('login.btnLogging') : t('login.btnLogin')}
           </button>
         </form>
 
         <div className="mt-8 text-center">
           <p className="text-xs text-zinc-500">
-            Don't have an account?{' '}
+            {t('login.noAcc')}{' '}
             <Link href="/signup" className="font-bold text-purple-400 hover:text-purple-300 transition-colors">
-              Sign up
+              {t('login.signupLink')}
             </Link>
           </p>
         </div>

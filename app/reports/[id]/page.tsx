@@ -8,30 +8,23 @@ import { ArrowLeft, Calendar, MapPin, ThumbsUp, CheckCircle, HelpCircle, XCircle
 import { StatusBadge } from '@/components/StatusBadge'
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import confetti from 'canvas-confetti'
+import { useLanguage } from '@/lib/LanguageContext'
 
 // Dynamically load the Leaflet Map
 const MapOverview = dynamic(() => import('@/components/MapOverview'), {
   ssr: false,
   loading: () => (
     <div className="w-full h-[250px] rounded-2xl bg-zinc-900 border border-zinc-800 animate-pulse flex items-center justify-center">
-      <span className="text-zinc-500 text-sm">Loading map location...</span>
+      <span className="text-zinc-500 text-sm">Loading...</span>
     </div>
   ),
 })
-
-const CATEGORY_LABELS: Record<string, string> = {
-  road_damage: '🛣️ Road Damage',
-  garbage: '🗑️ Garbage Pile',
-  water_leakage: '💧 Water Leakage',
-  drainage: '🌊 Drainage / Waterlogging',
-  streetlight: '💡 Streetlight',
-  other: '📌 Other Civic Issue',
-}
 
 export default function ReportDetailPage() {
   const params = useParams()
   const router = useRouter()
   const id = params.id as string
+  const { t, language } = useLanguage()
 
   const [report, setReport] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -146,9 +139,9 @@ export default function ReportDetailPage() {
 
   // Timeline Steps Helpers
   const timelineSteps = [
-    { label: 'Pending Verification', key: 'pending', done: true },
-    { label: 'In Progress (Active Crew)', key: 'in_progress', done: report.status !== 'pending' && report.status !== 'rejected' },
-    { label: 'Resolved / Finished', key: 'resolved', done: report.status === 'resolved' },
+    { label: t('status.pending'), key: 'pending', done: true },
+    { label: t('status.in_progress'), key: 'in_progress', done: report.status !== 'pending' && report.status !== 'rejected' },
+    { label: t('status.resolved'), key: 'resolved', done: report.status === 'resolved' },
   ]
 
   const isAuthor = user && report.user_id === user.id
@@ -157,10 +150,10 @@ export default function ReportDetailPage() {
     <div className="container mx-auto max-w-4xl px-4 py-10 md:py-16">
       <Link
         href="/reports"
-        className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 mb-6 transition"
+        className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 mb-6 transition cursor-pointer"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to Catalog
+        {t('detail.btnBackCatalog')}
       </Link>
 
       {/* Main Container Grid */}
@@ -173,7 +166,7 @@ export default function ReportDetailPage() {
             {/* Header info */}
             <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
               <span className="text-xs font-bold text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/20">
-                {CATEGORY_LABELS[report.category] || report.category}
+                {t('category.' + report.category)}
               </span>
               <StatusBadge status={report.status} />
             </div>
@@ -185,7 +178,7 @@ export default function ReportDetailPage() {
             <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400 border-b border-zinc-900 pb-4 mb-6">
               <div className="flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-zinc-500" />
-                <span>Logged: {new Date(report.created_at).toLocaleString()}</span>
+                <span>{t('card.reportedOn')}: {new Date(report.created_at).toLocaleString(language === 'en' ? 'en-US' : language)}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <MapPin className="w-4 h-4 text-purple-400" />
@@ -193,7 +186,7 @@ export default function ReportDetailPage() {
               </div>
             </div>
 
-            <h3 className="text-xs font-bold text-zinc-300 uppercase mb-2">Original Description</h3>
+            <h3 className="text-xs font-bold text-zinc-300 uppercase mb-2">{t('form.fieldDesc')}</h3>
             <p className="text-zinc-400 text-sm leading-relaxed mb-6">
               {report.description || 'No description provided.'}
             </p>
@@ -269,14 +262,14 @@ export default function ReportDetailPage() {
                       <button
                         onClick={() => handleCitizenConfirmation(true)}
                         disabled={actionLoading}
-                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold transition disabled:opacity-50"
+                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold transition disabled:opacity-50 cursor-pointer"
                       >
                         Yes, Confirm Fixed
                       </button>
                       <button
                         onClick={() => handleCitizenConfirmation(false)}
                         disabled={actionLoading}
-                        className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-750 text-zinc-300 border border-zinc-750 text-[11px] font-bold transition disabled:opacity-50"
+                        className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-750 text-zinc-300 border border-zinc-750 text-[11px] font-bold transition disabled:opacity-50 cursor-pointer"
                       >
                         No, Still Broken
                       </button>
@@ -305,7 +298,7 @@ export default function ReportDetailPage() {
         <div className="lg:col-span-4 space-y-6">
           {/* Exact Coordinates Map Pin */}
           <div className="p-5 rounded-3xl glass-panel space-y-4">
-            <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider">Map Coordinates</h3>
+            <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider">{t('detail.coordinates')}</h3>
             <div className="h-[200px]">
               <MapOverview reports={[report]} zoom={15} />
             </div>
@@ -318,11 +311,11 @@ export default function ReportDetailPage() {
           <div className="p-5 rounded-3xl glass-panel space-y-4 text-center">
             <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Community Priority</h3>
             <div className="text-3xl font-extrabold text-zinc-100">{report.upvote_count}</div>
-            <span className="text-[10px] text-zinc-500 block">citizens upvoted this ticket</span>
+            <span className="text-[10px] text-zinc-500 block">{t('card.upvotes')}</span>
             
             <button
               onClick={handleUpvote}
-              className={`w-full py-3 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 border transition ${
+              className={`w-full py-3 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 border transition cursor-pointer ${
                 upvoted
                   ? 'bg-purple-500/10 text-purple-300 border-purple-500/30'
                   : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'

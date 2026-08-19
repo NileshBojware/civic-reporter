@@ -3,10 +3,11 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Shield, Sparkles, AlertTriangle, ToggleLeft, Search, Eye, Filter, ArrowUpRight } from 'lucide-react'
+import { Shield, AlertTriangle, ToggleLeft, Search, ArrowUpRight } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import { StatusBadge } from '@/components/StatusBadge'
 import { AiProBadge } from '@/components/AiProBadge'
+import { useLanguage } from '@/lib/LanguageContext'
 
 export default function AdminDashboardPage() {
   const router = useRouter()
@@ -14,6 +15,7 @@ export default function AdminDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
+  const { t } = useLanguage()
 
   // Filters and search
   const [searchTerm, setSearchTerm] = useState('')
@@ -123,8 +125,8 @@ export default function AdminDashboardPage() {
             <Shield className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-2xl font-extrabold text-white">Administrative Portal</h1>
-            <p className="text-zinc-500 text-xs mt-0.5">Municipal review & resolution center</p>
+            <h1 className="text-2xl font-extrabold text-white">{t('admin.dashboard')}</h1>
+            <p className="text-zinc-500 text-xs mt-0.5">{t('admin.subtitle')}</p>
           </div>
         </div>
       </div>
@@ -132,19 +134,19 @@ export default function AdminDashboardPage() {
       {/* Admin stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-850">
-          <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider block">Total Reports</span>
+          <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider block">{t('hero.statsTotal')}</span>
           <span className="text-2xl font-extrabold text-white block mt-1.5">{totalCount}</span>
         </div>
         <div className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-850">
-          <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider block">Pending Inspection</span>
+          <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider block">{t('hero.statsPending')}</span>
           <span className="text-2xl font-extrabold text-amber-500 block mt-1.5">{pendingCount}</span>
         </div>
         <div className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-850">
-          <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider block">Work In Progress</span>
+          <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider block">{t('hero.statsProgress')}</span>
           <span className="text-2xl font-extrabold text-blue-500 block mt-1.5">{progressCount}</span>
         </div>
         <div className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-850">
-          <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider block">Issues Resolved</span>
+          <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider block">{t('hero.statsResolved')}</span>
           <span className="text-2xl font-extrabold text-emerald-500 block mt-1.5">{resolvedCount}</span>
         </div>
       </div>
@@ -154,7 +156,7 @@ export default function AdminDashboardPage() {
         {/* Reports Table Manager (8 cols) */}
         <div className="lg:col-span-8 p-6 rounded-3xl glass-panel space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <h3 className="text-base font-bold text-white">Submitted Tickets</h3>
+            <h3 className="text-base font-bold text-white">{t('myreports.title')}</h3>
             
             {/* Search and Filters toolbar */}
             <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
@@ -164,7 +166,7 @@ export default function AdminDashboardPage() {
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search title/address..."
+                  placeholder={t('admin.search')}
                   className="w-full sm:w-44 pl-9 pr-3 py-1.5 rounded-xl bg-zinc-950 border border-zinc-850 text-xs text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-purple-500 transition"
                 />
               </div>
@@ -172,13 +174,13 @@ export default function AdminDashboardPage() {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-1.5 rounded-xl bg-zinc-950 border border-zinc-850 text-xs text-zinc-300 font-semibold focus:outline-none focus:border-purple-500"
+                className="px-3 py-1.5 rounded-xl bg-zinc-950 border border-zinc-850 text-xs text-zinc-300 font-semibold focus:outline-none focus:border-purple-500 cursor-pointer"
               >
-                <option value="all">All Statuses</option>
-                <option value="pending">Pending</option>
-                <option value="in_progress">In Progress</option>
-                <option value="resolved">Resolved</option>
-                <option value="rejected">Rejected</option>
+                <option value="all">{t('catalog.allStatuses')}</option>
+                <option value="pending">{t('status.pending')}</option>
+                <option value="in_progress">{t('status.in_progress')}</option>
+                <option value="resolved">{t('status.resolved')}</option>
+                <option value="rejected">{t('status.rejected')}</option>
               </select>
             </div>
           </div>
@@ -188,18 +190,18 @@ export default function AdminDashboardPage() {
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-zinc-950 border-b border-zinc-900 text-zinc-500 font-bold uppercase tracking-wider">
-                  <th className="p-4">Report Details</th>
-                  <th className="p-4">Category</th>
-                  <th className="p-4 text-center">Votes</th>
-                  <th className="p-4">Status</th>
-                  <th className="p-4 text-right">Actions</th>
+                  <th className="p-4">{t('admin.thTitle')}</th>
+                  <th className="p-4">{t('admin.thCategory')}</th>
+                  <th className="p-4 text-center">{t('admin.score')}</th>
+                  <th className="p-4">{t('myreports.thStatus')}</th>
+                  <th className="p-4 text-right">{t('myreports.thActions')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-900">
                 {filteredReports.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="p-8 text-center text-zinc-500 font-medium">
-                      No reports match the active filters.
+                      {t('catalog.noMatches')}
                     </td>
                   </tr>
                 ) : (
@@ -210,7 +212,7 @@ export default function AdminDashboardPage() {
                         <span className="text-[10px] text-zinc-500 block truncate mt-0.5">{report.address}</span>
                       </td>
                       <td className="p-4 text-zinc-400 font-medium">
-                        {report.category.replace('_', ' ')}
+                        {t('category.' + report.category)}
                       </td>
                       <td className="p-4 text-center font-semibold text-zinc-300">
                         {report.upvote_count}
@@ -221,9 +223,9 @@ export default function AdminDashboardPage() {
                       <td className="p-4 text-right">
                         <Link
                           href={`/admin/reports/${report.id}`}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700/80 text-[10px] font-bold text-zinc-300 hover:text-white transition"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-zinc-800 hover:bg-zinc-700/80 text-[10px] font-bold text-zinc-300 hover:text-white transition cursor-pointer"
                         >
-                          <span>Manage</span>
+                          <span>{t('admin.btnView')}</span>
                           <ArrowUpRight className="w-3 h-3" />
                         </Link>
                       </td>

@@ -5,11 +5,13 @@ import Link from 'next/link'
 import { PlusCircle, Info, Calendar, MapPin, ArrowRight, Clipboard } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import { StatusBadge } from '@/components/StatusBadge'
+import { useLanguage } from '@/lib/LanguageContext'
 
 export default function MyReportsPage() {
   const [reports, setReports] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
+  const { t, language } = useLanguage()
 
   useEffect(() => {
     const fetchMyReports = async () => {
@@ -82,23 +84,22 @@ export default function MyReportsPage() {
     <div className="container mx-auto max-w-4xl px-4 py-10 md:py-16">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white">My Submissions</h1>
-          <p className="text-zinc-400 text-sm mt-1">Track and manage your submitted issue reports.</p>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-white">{t('myreports.title')}</h1>
+          <p className="text-zinc-400 text-sm mt-1">{t('myreports.subtitle')}</p>
         </div>
         <Link
           href="/report"
-          className="flex items-center gap-1.5 px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl shadow-md transition"
+          className="flex items-center gap-1.5 px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer"
         >
           <PlusCircle className="w-4 h-4" />
-          <span>Report Another Issue</span>
+          <span>{t('myreports.btnReportNow')}</span>
         </Link>
       </div>
 
       {reports.length === 0 ? (
         <div className="text-center py-20 border border-dashed border-zinc-850 rounded-3xl space-y-4">
           <Clipboard className="w-12 h-12 text-zinc-600 mx-auto" />
-          <p className="text-zinc-400 text-sm">You haven't submitted any civic issue reports yet.</p>
-          <p className="text-xs text-zinc-650">Help improve your locality by reporting problems you see.</p>
+          <p className="text-zinc-400 text-sm">{t('myreports.empty')}</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -120,7 +121,7 @@ export default function MyReportsPage() {
                   </h3>
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-550">
                     <span className="font-semibold text-purple-400">
-                      {report.category.replace('_', ' ').toUpperCase()}
+                      {t('category.' + report.category)}
                     </span>
                     <span className="text-zinc-700">•</span>
                     <span className="flex items-center gap-1">
@@ -130,7 +131,7 @@ export default function MyReportsPage() {
                     <span className="text-zinc-700">•</span>
                     <span className="flex items-center gap-1">
                       <Calendar className="w-3.5 h-3.5 text-zinc-600" />
-                      <span>{new Date(report.created_at).toLocaleDateString()}</span>
+                      <span>{new Date(report.created_at).toLocaleDateString(language === 'en' ? 'en-US' : language)}</span>
                     </span>
                   </div>
                 </div>
@@ -140,9 +141,9 @@ export default function MyReportsPage() {
                 <StatusBadge status={report.status} />
                 <Link
                   href={`/reports/${report.id}`}
-                  className="inline-flex items-center gap-1 text-xs font-bold text-purple-400 hover:text-purple-300 transition-colors"
+                  className="inline-flex items-center gap-1 text-xs font-bold text-purple-400 hover:text-purple-300 transition-colors cursor-pointer"
                 >
-                  <span>Track Status</span>
+                  <span>{t('card.details')}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>

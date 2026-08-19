@@ -3,8 +3,10 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Shield, LogOut, MapPin, User, Menu, X, PlusCircle } from 'lucide-react'
+import { Shield, LogOut, MapPin, User, Menu, X, PlusCircle, Globe, ChevronDown } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
+import { useLanguage } from '@/lib/LanguageContext'
+import { LANGUAGES } from '@/lib/translations'
 
 export function Navbar() {
   const pathname = usePathname()
@@ -12,6 +14,10 @@ export function Navbar() {
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [langDropdownOpen, setLangDropdownOpen] = useState(false)
+
+  const { language, setLanguage, t } = useLanguage()
+  const selectedLang = LANGUAGES.find(l => l.code === language) || LANGUAGES[0]
 
   // Listen to auth changes
   useEffect(() => {
@@ -97,10 +103,10 @@ export function Navbar() {
   }
 
   const navLinks = [
-    { href: '/reports', label: 'All Reports' },
-    { href: '/report', label: 'Report Issue', icon: PlusCircle },
-    { href: '/my-reports', label: 'My Reports', citizenOnly: true },
-    { href: '/admin', label: 'Admin Dashboard', adminOnly: true },
+    { href: '/reports', label: t('nav.allReports') },
+    { href: '/report', label: t('nav.reportIssue'), icon: PlusCircle },
+    { href: '/my-reports', label: t('nav.myReports'), citizenOnly: true },
+    { href: '/admin', label: t('nav.adminDashboard'), adminOnly: true },
   ]
 
   const filteredLinks = navLinks.filter((link) => {
@@ -143,6 +149,46 @@ export function Navbar() {
 
         {/* Desktop Auth and User Info */}
         <div className="hidden md:flex items-center gap-4">
+          {/* Language Selector */}
+          <div className="relative">
+            <button
+              onClick={() => setLangDropdownOpen(!langDropdownOpen)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-zinc-900/60 border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-700 text-xs font-semibold transition-all focus:outline-none cursor-pointer"
+            >
+              <Globe className="w-3.5 h-3.5 text-purple-400" />
+              <span>{selectedLang.nativeLabel}</span>
+              <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${langDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+
+            {langDropdownOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setLangDropdownOpen(false)} 
+                />
+                <div className="absolute right-0 mt-2 w-40 rounded-2xl bg-zinc-950 border border-zinc-800 p-1.5 shadow-xl shadow-black/80 z-50 animate-in fade-in slide-in-from-top-1 duration-200">
+                  {LANGUAGES.map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => {
+                        setLanguage(lang.code)
+                        setLangDropdownOpen(false)
+                      }}
+                      className={`w-full text-left px-3 py-2 rounded-xl text-xs font-medium transition flex items-center justify-between cursor-pointer ${
+                        language === lang.code
+                          ? 'bg-purple-600/10 text-purple-400 font-bold border border-purple-500/20'
+                          : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50'
+                      }`}
+                    >
+                      <span>{lang.nativeLabel}</span>
+                      <span className="text-[10px] text-zinc-500 font-normal">{lang.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
           {user ? (
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 text-zinc-300 bg-zinc-900/60 border border-zinc-800 px-3.5 py-1.5 rounded-2xl text-xs font-semibold">
@@ -151,14 +197,14 @@ export function Navbar() {
                 ) : (
                   <User className="w-3.5 h-3.5 text-zinc-400" />
                 )}
-                <span>{profile?.full_name || 'Citizen'}</span>
+                <span>{profile?.full_name || t('nav.citizen')}</span>
               </div>
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-1.5 px-4.5 py-2 rounded-2xl bg-zinc-800 hover:bg-zinc-700/80 text-zinc-300 hover:text-white border border-zinc-700/50 text-xs font-bold transition-all"
+                className="flex items-center gap-1.5 px-4.5 py-2 rounded-2xl bg-zinc-800 hover:bg-zinc-700/80 text-zinc-300 hover:text-white border border-zinc-700/50 text-xs font-bold transition-all cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                <span>Log Out</span>
+                <span>{t('nav.logOut')}</span>
               </button>
             </div>
           ) : (
@@ -167,13 +213,13 @@ export function Navbar() {
                 href="/login"
                 className="text-xs font-bold text-zinc-400 hover:text-zinc-100 transition-colors px-4 py-2"
               >
-                Log In
+                {t('nav.logIn')}
               </Link>
               <Link
                 href="/signup"
                 className="text-xs font-extrabold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 px-4.5 py-2 rounded-2xl shadow-lg shadow-purple-600/25 hover:shadow-purple-600/35 hover:-translate-y-0.5 transition-all duration-200"
               >
-                Sign Up
+                {t('nav.signUp')}
               </Link>
             </div>
           )}
@@ -182,7 +228,7 @@ export function Navbar() {
         {/* Mobile Menu Toggle */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 -mr-2 text-zinc-400 hover:text-zinc-200 md:hidden transition"
+          className="p-2 -mr-2 text-zinc-400 hover:text-zinc-200 md:hidden transition cursor-pointer"
         >
           {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
@@ -210,6 +256,29 @@ export function Navbar() {
             })}
           </nav>
 
+          {/* Mobile Language Section */}
+          <div className="pt-4 border-t border-zinc-800">
+            <div className="flex items-center gap-2 text-zinc-400 text-xs font-semibold px-2 mb-3">
+              <Globe className="w-3.5 h-3.5 text-purple-400" />
+              <span>Choose Language</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {LANGUAGES.map((lang) => (
+                <button
+                  key={lang.code}
+                  onClick={() => setLanguage(lang.code)}
+                  className={`px-3 py-2 rounded-xl text-xs font-semibold transition text-center border cursor-pointer ${
+                    language === lang.code
+                      ? 'bg-purple-600/10 text-purple-400 border-purple-500/20 shadow-sm'
+                      : 'bg-zinc-900/30 text-zinc-400 border-zinc-800 hover:text-zinc-200 hover:bg-zinc-900/50'
+                  }`}
+                >
+                  {lang.nativeLabel}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="pt-4 border-t border-zinc-800 flex flex-col gap-3">
             {user ? (
               <>
@@ -219,17 +288,17 @@ export function Navbar() {
                   ) : (
                     <User className="w-4 h-4 text-zinc-400" />
                   )}
-                  <span>{profile?.full_name || 'Citizen'}</span>
+                  <span>{profile?.full_name || t('nav.citizen')}</span>
                 </div>
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false)
                     handleLogout()
                   }}
-                  className="flex items-center justify-center gap-1.5 w-full p-2.5 rounded-xl bg-zinc-850 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 text-xs font-bold transition"
+                  className="flex items-center justify-center gap-1.5 w-full p-2.5 rounded-xl bg-zinc-850 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 text-xs font-bold transition cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" />
-                  <span>Log Out</span>
+                  <span>{t('nav.logOut')}</span>
                 </button>
               </>
             ) : (
@@ -239,14 +308,14 @@ export function Navbar() {
                   onClick={() => setMobileMenuOpen(false)}
                   className="text-center p-2.5 text-sm font-bold text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/40 rounded-xl"
                 >
-                  Log In
+                  {t('nav.logIn')}
                 </Link>
                 <Link
                   href="/signup"
                   onClick={() => setMobileMenuOpen(false)}
                   className="text-center p-2.5 text-sm font-extrabold text-white bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl shadow-lg shadow-purple-600/20"
                 >
-                  Sign Up
+                  {t('nav.signUp')}
                 </Link>
               </div>
             )}

@@ -6,13 +6,14 @@ import dynamic from 'next/dynamic'
 import { PlusCircle, MapPin, CheckCircle, Flame, ShieldAlert, ChevronRight } from 'lucide-react'
 import { ReportCard } from '@/components/ReportCard'
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
+import { useLanguage } from '@/lib/LanguageContext'
 
 // Dynamically load Leaflet Map to avoid SSR errors
 const MapOverview = dynamic(() => import('@/components/MapOverview'), {
   ssr: false,
   loading: () => (
     <div className="w-full h-full min-h-[400px] rounded-3xl bg-zinc-900/60 border border-zinc-800 animate-pulse flex items-center justify-center">
-      <span className="text-zinc-500 text-sm">Loading Live Map...</span>
+      <span className="text-zinc-500 text-sm">Loading...</span>
     </div>
   ),
 })
@@ -21,6 +22,7 @@ export default function LandingPage() {
   const [reports, setReports] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
+  const { t } = useLanguage()
 
   // Fetch reports on mount
   useEffect(() => {
@@ -87,11 +89,8 @@ export default function LandingPage() {
   }
 
   // Pre-determine which ones are upvoted by this user
-  // (In mock mode or Supabase, check local list)
   const checkUpvoted = (reportId: string) => {
     if (!user) return false
-    // For simplicity, we fetch matching votes if needed, but in mock mode we can read report_votes from API if desired.
-    // As a simple shortcut, let's keep track of upvotes locally in localStorage if needed or just let it update on response.
     return false
   }
 
@@ -102,16 +101,16 @@ export default function LandingPage() {
         <div className="container mx-auto max-w-6xl text-center flex flex-col items-center">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-500/10 text-purple-400 border border-purple-500/20 mb-6 animate-pulse">
             <Flame className="w-3.5 h-3.5" />
-            Empowering Citizen Action
+            {t('hero.badge')}
           </span>
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-white mb-6 max-w-4xl leading-tight">
-            Report Civic Problems. <br className="hidden md:inline" />
+            {t('hero.title1')} <br className="hidden md:inline" />
             <span className="bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
-              Track Solutions in Real Time.
+              {t('hero.title2')}
             </span>
           </h1>
           <p className="text-zinc-400 text-base md:text-lg max-w-2xl mb-10 leading-relaxed">
-            Help improve your municipality. Report potholes, broken streetlights, leakage, or trash piles with photos and location pins. Get status updates instantly.
+            {t('hero.desc')}
           </p>
 
           <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -120,13 +119,13 @@ export default function LandingPage() {
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold shadow-lg shadow-purple-600/30 hover:shadow-purple-600/40 hover:-translate-y-0.5 transition-all duration-200"
             >
               <PlusCircle className="w-5 h-5" />
-              <span>Report a New Issue</span>
+              <span>{t('hero.btnReport')}</span>
             </Link>
             <Link
               href="/reports"
               className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 hover:border-zinc-700 font-bold transition-all duration-200"
             >
-              <span>View Live Map</span>
+              <span>{t('hero.btnViewMap')}</span>
               <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
@@ -142,19 +141,19 @@ export default function LandingPage() {
             
             <div className="text-center p-4 border-r border-zinc-800/60 last:border-0 md:block">
               <span className="text-2xl md:text-4xl font-extrabold text-zinc-100">{totalCount}</span>
-              <span className="text-xs text-zinc-400 block mt-1 font-semibold">Total Reports</span>
+              <span className="text-xs text-zinc-400 block mt-1 font-semibold">{t('hero.statsTotal')}</span>
             </div>
             <div className="text-center p-4 border-r border-zinc-800/60 last:border-0">
               <span className="text-2xl md:text-4xl font-extrabold text-amber-500">{pendingCount}</span>
-              <span className="text-xs text-zinc-400 block mt-1 font-semibold">Pending Review</span>
+              <span className="text-xs text-zinc-400 block mt-1 font-semibold">{t('hero.statsPending')}</span>
             </div>
             <div className="text-center p-4 border-r border-zinc-800/60 last:border-0">
               <span className="text-2xl md:text-4xl font-extrabold text-blue-500">{progressCount}</span>
-              <span className="text-xs text-zinc-400 block mt-1 font-semibold">In Progress</span>
+              <span className="text-xs text-zinc-400 block mt-1 font-semibold">{t('hero.statsProgress')}</span>
             </div>
             <div className="text-center p-4 last:border-0">
               <span className="text-2xl md:text-4xl font-extrabold text-emerald-500">{resolvedCount}</span>
-              <span className="text-xs text-zinc-400 block mt-1 font-semibold">Resolved</span>
+              <span className="text-xs text-zinc-400 block mt-1 font-semibold">{t('hero.statsResolved')}</span>
             </div>
           </div>
         </div>
@@ -167,25 +166,24 @@ export default function LandingPage() {
             {/* Map Explanation Info */}
             <div className="lg:col-span-4 space-y-6">
               <h2 className="text-2xl md:text-3xl font-extrabold text-white leading-tight">
-                Live Issues in <br />
-                Your Community
+                {t('landing.mapTitle')}
               </h2>
               <p className="text-zinc-400 text-sm leading-relaxed">
-                Explore local issues pinned on the map. If you notice a report that affects you, upvote it to increase its priority for municipal authorities.
+                {t('landing.mapDesc')}
               </p>
               
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="w-3.5 h-3.5 rounded-full bg-amber-500 border-2 border-zinc-950 animate-pulse" />
-                  <span className="text-xs text-zinc-300 font-semibold">Pending Inspection</span>
+                  <span className="text-xs text-zinc-300 font-semibold">{t('landing.mapLegendPending')}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-3.5 h-3.5 rounded-full bg-blue-500 border-2 border-zinc-950 animate-pulse" />
-                  <span className="text-xs text-zinc-300 font-semibold">In Progress (Work Assigned)</span>
+                  <span className="text-xs text-zinc-300 font-semibold">{t('landing.mapLegendProgress')}</span>
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-zinc-950 animate-pulse" />
-                  <span className="text-xs text-zinc-300 font-semibold">Resolved & Verified</span>
+                  <span className="text-xs text-zinc-300 font-semibold">{t('landing.mapLegendResolved')}</span>
                 </div>
               </div>
             </div>
@@ -203,14 +201,14 @@ export default function LandingPage() {
         <div className="container mx-auto max-w-6xl">
           <div className="flex items-center justify-between gap-4 mb-10">
             <div>
-              <h2 className="text-2xl md:text-3xl font-extrabold text-white">Recent Issue Logs</h2>
-              <p className="text-zinc-400 text-xs md:text-sm mt-1">Directly reported by local residents</p>
+              <h2 className="text-2xl md:text-3xl font-extrabold text-white">{t('landing.recentLogs')}</h2>
+              <p className="text-zinc-400 text-xs md:text-sm mt-1">{t('landing.recentSub')}</p>
             </div>
             <Link
               href="/reports"
               className="text-xs font-bold text-purple-400 hover:text-purple-300 transition flex items-center gap-1.5"
             >
-              <span>View Catalog</span>
+              <span>{t('landing.viewCatalog')}</span>
               <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
@@ -226,12 +224,12 @@ export default function LandingPage() {
             </div>
           ) : reports.length === 0 ? (
             <div className="text-center py-16 rounded-3xl border border-dashed border-zinc-800">
-              <p className="text-zinc-500 text-sm">No civic issues have been reported yet.</p>
+              <p className="text-zinc-500 text-sm">{t('landing.noIssuesYet')}</p>
               <Link
                 href="/report"
                 className="mt-4 inline-flex text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded-xl"
               >
-                Be the first to report
+                {t('landing.beFirst')}
               </Link>
             </div>
           ) : (

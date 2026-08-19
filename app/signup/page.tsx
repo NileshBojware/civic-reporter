@@ -3,8 +3,9 @@
 import React, { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { Lock, Mail, User, UserPlus, Eye, EyeOff } from 'lucide-react'
+import { Lock, Mail, User, Eye, EyeOff } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
+import { useLanguage } from '@/lib/LanguageContext'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -16,6 +17,7 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const { t } = useLanguage()
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -65,9 +67,6 @@ export default function SignupPage() {
           created_at: new Date().toISOString(),
         }
 
-        // Simulating writing profile to server mock JSON
-        // Since we are client-side we write user session locally,
-        // and when they access the app it counts them as logged in.
         localStorage.setItem('civic_reporter_user', JSON.stringify(mockUser))
 
         // Save mock profile in a mock database profiles array in localStorage
@@ -98,8 +97,8 @@ export default function SignupPage() {
         <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
 
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-extrabold text-white">Create Account</h2>
-          <p className="text-zinc-400 text-xs mt-1.5">Join the network to start resolving civic issues</p>
+          <h2 className="text-2xl font-extrabold text-white">{t('signup.title')}</h2>
+          <p className="text-zinc-400 text-xs mt-1.5">{t('signup.subtitle')}</p>
         </div>
 
         {error && (
@@ -118,7 +117,7 @@ export default function SignupPage() {
 
         <form onSubmit={handleSignup} className="space-y-5">
           <div>
-            <label className="text-xs font-bold text-zinc-400 block mb-1.5">Full Name</label>
+            <label className="text-xs font-bold text-zinc-400 block mb-1.5">{t('signup.fieldName')}</label>
             <div className="relative">
               <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-zinc-500" />
               <input
@@ -133,7 +132,7 @@ export default function SignupPage() {
           </div>
 
           <div>
-            <label className="text-xs font-bold text-zinc-400 block mb-1.5">Email Address</label>
+            <label className="text-xs font-bold text-zinc-400 block mb-1.5">{t('login.fieldEmail')}</label>
             <div className="relative">
               <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-zinc-500" />
               <input
@@ -148,7 +147,7 @@ export default function SignupPage() {
           </div>
 
           <div>
-            <label className="text-xs font-bold text-zinc-400 block mb-1.5">Password</label>
+            <label className="text-xs font-bold text-zinc-400 block mb-1.5">{t('login.fieldPass')}</label>
             <div className="relative">
               <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-zinc-500" />
               <input
@@ -162,29 +161,27 @@ export default function SignupPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition cursor-pointer"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
           </div>
 
-
-
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 mt-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-sm font-extrabold shadow-lg shadow-purple-600/20 hover:shadow-purple-600/30 hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-50 disabled:shadow-none transition-all duration-200"
+            className="w-full py-3.5 mt-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-sm font-extrabold shadow-lg shadow-purple-600/20 hover:shadow-purple-600/30 hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-50 disabled:shadow-none transition-all duration-200 cursor-pointer"
           >
-            {loading ? 'Creating Account...' : 'Sign Up'}
+            {loading ? t('signup.btnSigning') : t('signup.btnSignup')}
           </button>
         </form>
 
         <div className="mt-8 text-center">
           <p className="text-xs text-zinc-500">
-            Already have an account?{' '}
+            {t('signup.hasAcc')}{' '}
             <Link href="/login" className="font-bold text-purple-400 hover:text-purple-300 transition-colors">
-              Log in
+              {t('signup.loginLink')}
             </Link>
           </p>
         </div>

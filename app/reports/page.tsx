@@ -5,39 +5,41 @@ import dynamic from 'next/dynamic'
 import { Filter, Map, List, RefreshCw } from 'lucide-react'
 import { ReportCard } from '@/components/ReportCard'
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
+import { useLanguage } from '@/lib/LanguageContext'
 
 // Dynamically load the Leaflet Map
 const MapOverview = dynamic(() => import('@/components/MapOverview'), {
   ssr: false,
   loading: () => (
     <div className="w-full h-full min-h-[400px] rounded-3xl bg-zinc-900 border border-zinc-800 animate-pulse flex items-center justify-center">
-      <span className="text-zinc-500 text-sm">Loading Live Map...</span>
+      <span className="text-zinc-500 text-sm">Loading...</span>
     </div>
   ),
 })
 
 const CATEGORIES = [
-  { value: 'all', label: 'All Categories' },
-  { value: 'road_damage', label: '🛣️ Road Damage' },
-  { value: 'garbage', label: '🗑️ Garbage Pile' },
-  { value: 'water_leakage', label: '💧 Water Leakage' },
-  { value: 'drainage', label: '🌊 Drainage/Waterlogging' },
-  { value: 'streetlight', label: '💡 Streetlight' },
-  { value: 'other', label: '📌 Other' },
+  { value: 'all' },
+  { value: 'road_damage' },
+  { value: 'garbage' },
+  { value: 'water_leakage' },
+  { value: 'drainage' },
+  { value: 'streetlight' },
+  { value: 'other' },
 ]
 
 const STATUSES = [
-  { value: 'all', label: 'All Statuses' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'in_progress', label: 'In Progress' },
-  { value: 'resolved', label: 'Resolved' },
-  { value: 'rejected', label: 'Rejected' },
+  { value: 'all' },
+  { value: 'pending' },
+  { value: 'in_progress' },
+  { value: 'resolved' },
+  { value: 'rejected' },
 ]
 
 export default function ReportsPage() {
   const [reports, setReports] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
+  const { t } = useLanguage()
 
   // Filters State
   const [selectedCategory, setSelectedCategory] = useState('all')
@@ -116,18 +118,18 @@ export default function ReportsPage() {
       <div className="w-full border-b border-zinc-900 bg-zinc-950/80 backdrop-blur px-4 md:px-6 py-4 flex flex-wrap items-center justify-between gap-4 z-10">
         <div className="flex items-center gap-2">
           <Filter className="w-4 h-4 text-purple-400" />
-          <h2 className="text-sm font-bold text-zinc-200">Filters</h2>
+          <h2 className="text-sm font-bold text-zinc-200">{t('catalog.filters')}</h2>
         </div>
 
         <div className="flex items-center gap-3 flex-grow md:flex-grow-0">
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-300 font-semibold focus:outline-none focus:border-purple-500 flex-grow md:flex-grow-0"
+            className="px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-300 font-semibold focus:outline-none focus:border-purple-500 flex-grow md:flex-grow-0 cursor-pointer"
           >
             {CATEGORIES.map((c) => (
               <option key={c.value} value={c.value} className="bg-zinc-900">
-                {c.label}
+                {c.value === 'all' ? t('catalog.allCategories') : t('category.' + c.value)}
               </option>
             ))}
           </select>
@@ -135,19 +137,19 @@ export default function ReportsPage() {
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-300 font-semibold focus:outline-none focus:border-purple-500 flex-grow md:flex-grow-0"
+            className="px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-300 font-semibold focus:outline-none focus:border-purple-500 flex-grow md:flex-grow-0 cursor-pointer"
           >
             {STATUSES.map((s) => (
               <option key={s.value} value={s.value} className="bg-zinc-900">
-                {s.label}
+                {s.value === 'all' ? t('catalog.allStatuses') : t('status.' + s.value)}
               </option>
             ))}
           </select>
 
           <button
             onClick={fetchReports}
-            className="p-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-zinc-200 rounded-xl transition"
-            title="Refresh logs"
+            className="p-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-zinc-200 rounded-xl transition cursor-pointer"
+            title={t('catalog.refresh')}
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -157,7 +159,7 @@ export default function ReportsPage() {
         <div className="flex md:hidden bg-zinc-900 p-0.5 rounded-xl border border-zinc-800">
           <button
             onClick={() => setViewMode('list')}
-            className={`p-2 rounded-lg flex items-center justify-center ${
+            className={`p-2 rounded-lg flex items-center justify-center cursor-pointer ${
               viewMode === 'list' ? 'bg-purple-600 text-white' : 'text-zinc-400'
             }`}
           >
@@ -165,7 +167,7 @@ export default function ReportsPage() {
           </button>
           <button
             onClick={() => setViewMode('map')}
-            className={`p-2 rounded-lg flex items-center justify-center ${
+            className={`p-2 rounded-lg flex items-center justify-center cursor-pointer ${
               viewMode === 'map' ? 'bg-purple-600 text-white' : 'text-zinc-400'
             }`}
           >
@@ -193,7 +195,7 @@ export default function ReportsPage() {
             </div>
           ) : filteredReports.length === 0 ? (
             <div className="text-center py-16 border border-dashed border-zinc-850 rounded-3xl">
-              <p className="text-zinc-500 text-sm">No civic reports match your filter selections.</p>
+              <p className="text-zinc-500 text-sm">{t('catalog.noMatches')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-6">

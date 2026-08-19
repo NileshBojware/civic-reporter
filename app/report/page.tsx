@@ -8,24 +8,25 @@ import { MapPin, Image as ImageIcon, Sparkles, AlertTriangle, CheckCircle, Navig
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import imageCompression from 'browser-image-compression'
 import confetti from 'canvas-confetti'
+import { useLanguage } from '@/lib/LanguageContext'
 
 // Dynamically import MapPicker
 const MapPicker = dynamic(() => import('@/components/MapPicker'), {
   ssr: false,
   loading: () => (
     <div className="w-full h-[300px] rounded-2xl bg-zinc-900 border border-zinc-800 animate-pulse flex items-center justify-center">
-      <span className="text-zinc-500 text-sm font-semibold">Loading Map Picker...</span>
+      <span className="text-zinc-500 text-sm font-semibold">Loading...</span>
     </div>
   ),
 })
 
 const CATEGORIES = [
-  { value: 'road_damage', label: '🛣️ Road Damage (Potholes, cracks)' },
-  { value: 'garbage', label: '🗑️ Garbage Pile (Overflowing bins, litter)' },
-  { value: 'water_leakage', label: '💧 Water Leakage (Burst pipe, overflow)' },
-  { value: 'drainage', label: '🌊 Waterlogging / Blocked Drainage' },
-  { value: 'streetlight', label: '💡 Streetlight (Flickering, dead bulb)' },
-  { value: 'other', label: '📌 Other Civic Issue' },
+  { value: 'road_damage' },
+  { value: 'garbage' },
+  { value: 'water_leakage' },
+  { value: 'drainage' },
+  { value: 'streetlight' },
+  { value: 'other' },
 ]
 
 export default function ReportPage() {
@@ -33,6 +34,7 @@ export default function ReportPage() {
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
   const [loadingAuth, setLoadingAuth] = useState(true)
+  const { t } = useLanguage()
 
   // Form State
   const [title, setTitle] = useState('')
@@ -273,7 +275,7 @@ export default function ReportPage() {
         colors: ['#a855f7', '#6366f1', '#3b82f6'],
       })
 
-      alert('Report logged successfully!')
+      alert(t('form.successTitle'))
       router.push('/my-reports')
       router.refresh()
     } catch (err: any) {
@@ -327,12 +329,12 @@ export default function ReportPage() {
         className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 mb-6 transition"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to Home
+        {t('form.btnBack')}
       </Link>
 
       <div className="mb-8">
-        <h1 className="text-2xl md:text-3xl font-extrabold text-white">Report a Civic Issue</h1>
-        <p className="text-zinc-400 text-sm mt-1">Submit a problem with photo evidence and location details.</p>
+        <h1 className="text-2xl md:text-3xl font-extrabold text-white">{t('form.title')}</h1>
+        <p className="text-zinc-400 text-sm mt-1">{t('form.subtitle')}</p>
       </div>
 
       {error && (
@@ -346,35 +348,35 @@ export default function ReportPage() {
         <div className="p-6 md:p-8 rounded-3xl glass-panel space-y-6">
           <h3 className="text-base font-bold text-white border-b border-zinc-800 pb-3 flex items-center gap-2">
             <span className="w-6 h-6 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center text-xs font-bold">1</span>
-            Issue Details
+            {t('form.fieldTitle')}
           </h3>
 
           <div>
-            <label className="text-xs font-bold text-zinc-400 block mb-1.5">Issue Title *</label>
+            <label className="text-xs font-bold text-zinc-400 block mb-1.5">{t('form.fieldTitle')} *</label>
             <input
               type="text"
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Brief summary of the issue (e.g. Large pothole near bus stand)"
+              placeholder={t('form.titlePlaceholder')}
               className="w-full px-4 py-3 rounded-2xl bg-zinc-900/60 border border-zinc-850 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-purple-500 transition"
             />
           </div>
 
           <div>
-            <label className="text-xs font-bold text-zinc-400 block mb-1.5">Description</label>
+            <label className="text-xs font-bold text-zinc-400 block mb-1.5">{t('form.fieldDesc')}</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
-              placeholder="Provide more context, size, danger level, or references for field crews..."
+              placeholder={t('form.descPlaceholder')}
               className="w-full px-4 py-3 rounded-2xl bg-zinc-900/60 border border-zinc-850 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-purple-500 transition resize-none"
             />
           </div>
 
           <div>
             <div className="flex items-center justify-between gap-4 mb-1.5">
-              <label className="text-xs font-bold text-zinc-400">Category *</label>
+              <label className="text-xs font-bold text-zinc-400">{t('form.fieldCategory')} *</label>
               <button
                 type="button"
                 disabled
@@ -390,11 +392,11 @@ export default function ReportPage() {
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl bg-zinc-900/60 border border-zinc-850 text-sm text-zinc-100 focus:outline-none focus:border-purple-500 transition"
+              className="w-full px-4 py-3 rounded-2xl bg-zinc-900/60 border border-zinc-850 text-sm text-zinc-100 focus:outline-none focus:border-purple-500 transition cursor-pointer"
             >
               {CATEGORIES.map((c) => (
                 <option key={c.value} value={c.value} className="bg-zinc-900">
-                  {c.label}
+                  {t('category.' + c.value)}
                 </option>
               ))}
             </select>
@@ -406,16 +408,16 @@ export default function ReportPage() {
           <div className="flex items-center justify-between gap-4 border-b border-zinc-800 pb-3">
             <h3 className="text-base font-bold text-white flex items-center gap-2">
               <span className="w-6 h-6 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center text-xs font-bold">2</span>
-              Location Tagging
+              {t('form.fieldLocation')}
             </h3>
             <button
               type="button"
               onClick={handleGeoLocate}
               disabled={locating}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 text-xs font-bold transition disabled:opacity-50"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 text-xs font-bold transition disabled:opacity-50 cursor-pointer"
             >
               <Navigation className={`w-3.5 h-3.5 ${locating ? 'animate-spin' : ''}`} />
-              <span>{locating ? 'Locating...' : 'Get GPS Location'}</span>
+              <span>{locating ? t('form.locating') : t('form.btnLocate')}</span>
             </button>
           </div>
 
@@ -430,7 +432,7 @@ export default function ReportPage() {
                 required
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                placeholder="Enter address details or nearby landmarks manually if empty..."
+                placeholder={t('form.locPlaceholder')}
                 className="w-full pl-10 pr-4 py-3 rounded-2xl bg-zinc-900/60 border border-zinc-850 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-purple-500 transition"
               />
             </div>
@@ -441,7 +443,7 @@ export default function ReportPage() {
         <div className="p-6 md:p-8 rounded-3xl glass-panel space-y-6">
           <h3 className="text-base font-bold text-white border-b border-zinc-800 pb-3 flex items-center gap-2">
             <span className="w-6 h-6 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center text-xs font-bold">3</span>
-            Evidence Evidence (Photo) *
+            {t('form.fieldPhoto')} *
           </h3>
 
           <div className="flex flex-col items-center justify-center border-2 border-dashed border-zinc-800 hover:border-purple-500/40 rounded-2xl p-6 transition cursor-pointer relative bg-zinc-900/10">
@@ -461,7 +463,7 @@ export default function ReportPage() {
                   className="max-h-52 rounded-xl mx-auto border border-zinc-850 mb-3 object-contain"
                 />
                 <span className="text-[10px] text-zinc-500 font-bold block">
-                  Compressed size: {(photo!.size / 1024).toFixed(1)} KB (Ideal for Vercel/Supabase free limits)
+                  Compressed size: {(photo!.size / 1024).toFixed(1)} KB
                 </span>
                 <span className="text-xs text-purple-400 font-bold mt-2 inline-block">
                   Click or drag to replace photo
@@ -473,14 +475,14 @@ export default function ReportPage() {
                   <ImageIcon className="w-5 h-5 text-zinc-500" />
                 </div>
                 <p className="text-sm font-semibold text-zinc-200 mb-1">Click to select photo evidence</p>
-                <p className="text-xs text-zinc-500">Camera pictures are automatically compressed</p>
+                <p className="text-xs text-zinc-500">{t('form.photoHelp')}</p>
               </div>
             )}
           </div>
 
           {compressing && (
             <div className="text-center py-2 text-xs text-purple-400 font-semibold animate-pulse">
-              Compressing image evidence to free-tier bounds...
+              Compressing...
             </div>
           )}
         </div>
@@ -492,10 +494,10 @@ export default function ReportPage() {
               <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
               <div>
                 <h4 className="text-sm font-extrabold text-amber-500">
-                  {duplicates.length} Similar Issue(s) Already Reported Nearby
+                  {t('form.duplicateDetected')}
                 </h4>
                 <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                  Other citizens have already reported similar {category.replace('_', ' ')} issues in this exact radius (within 100 meters) in the last 7 days.
+                  {t('form.duplicateDesc')}
                 </p>
               </div>
             </div>
@@ -526,10 +528,10 @@ export default function ReportPage() {
                 id="bypass"
                 checked={bypassDuplicates}
                 onChange={(e) => setBypassDuplicates(e.target.checked)}
-                className="rounded border-zinc-800 text-purple-600 focus:ring-purple-500"
+                className="rounded border-zinc-800 text-purple-600 focus:ring-purple-500 cursor-pointer"
               />
-              <label htmlFor="bypass" className="text-xs font-bold text-zinc-300 cursor-pointer">
-                My issue is unique / not listed above. I want to report anyway.
+              <label htmlFor="bypass" className="text-xs font-bold text-zinc-300 cursor-pointer select-none">
+                {t('form.bypassDuplicate')}
               </label>
             </div>
           </div>
@@ -540,9 +542,9 @@ export default function ReportPage() {
           <button
             type="submit"
             disabled={submitting || compressing || (duplicates.length > 0 && !bypassDuplicates)}
-            className="w-full md:w-auto px-10 py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold shadow-lg shadow-purple-600/20 hover:shadow-purple-600/30 hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-50 disabled:shadow-none transition-all duration-200"
+            className="w-full md:w-auto px-10 py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold shadow-lg shadow-purple-600/20 hover:shadow-purple-600/30 hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-50 disabled:shadow-none transition-all duration-200 cursor-pointer"
           >
-            {submitting ? 'Submitting Issue...' : 'Submit Civic Report'}
+            {submitting ? t('form.btnSubmitting') : t('form.btnSubmit')}
           </button>
         </div>
       </form>

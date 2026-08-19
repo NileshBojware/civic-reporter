@@ -4,6 +4,7 @@ import React, { useState } from 'react'
 import Link from 'next/link'
 import { MapPin, ThumbsUp, Calendar, ArrowRight } from 'lucide-react'
 import { StatusBadge } from './StatusBadge'
+import { useLanguage } from '@/lib/LanguageContext'
 
 interface Report {
   id: string
@@ -23,19 +24,11 @@ interface ReportCardProps {
   isUpvoted?: boolean
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  road_damage: '🛣️ Road Damage',
-  garbage: '🗑️ Garbage Pile',
-  water_leakage: '💧 Water Leakage',
-  drainage: '🌊 Waterlogging',
-  streetlight: '💡 Streetlight',
-  other: '📌 Other',
-}
-
 export function ReportCard({ report, onUpvote, isUpvoted = false }: ReportCardProps) {
   const [upvoteCount, setUpvoteCount] = useState(report.upvote_count)
   const [upvoted, setUpvoted] = useState(isUpvoted)
   const [loading, setLoading] = useState(false)
+  const { t, language } = useLanguage()
 
   const handleUpvote = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -54,7 +47,7 @@ export function ReportCard({ report, onUpvote, isUpvoted = false }: ReportCardPr
     }
   }
 
-  const formattedDate = new Date(report.created_at).toLocaleDateString('en-US', {
+  const formattedDate = new Date(report.created_at).toLocaleDateString(language === 'en' ? 'en-US' : language, {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
@@ -74,7 +67,7 @@ export function ReportCard({ report, onUpvote, isUpvoted = false }: ReportCardPr
         {/* Absolute status badges */}
         <div className="absolute top-4 left-4 z-10">
           <span className="bg-zinc-950/80 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold border border-zinc-800 text-zinc-300">
-            {CATEGORY_LABELS[report.category] || report.category}
+            {t('category.' + report.category)}
           </span>
         </div>
         <div className="absolute top-4 right-4 z-10">
@@ -99,7 +92,7 @@ export function ReportCard({ report, onUpvote, isUpvoted = false }: ReportCardPr
           </div>
           <div className="flex items-center gap-2 text-xs text-zinc-400">
             <Calendar className="w-4 h-4 text-zinc-500 shrink-0" />
-            <span>Reported on {formattedDate}</span>
+            <span>{t('card.reportedOn')} {formattedDate}</span>
           </div>
         </div>
 
@@ -116,12 +109,12 @@ export function ReportCard({ report, onUpvote, isUpvoted = false }: ReportCardPr
               }`}
             >
               <ThumbsUp className={`w-3.5 h-3.5 ${upvoted ? 'fill-purple-400 text-purple-400' : ''} ${loading ? 'animate-bounce' : ''}`} />
-              <span>{upvoteCount} upvotes</span>
+              <span>{upvoteCount} {t('card.upvotes')}</span>
             </button>
           ) : (
             <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-zinc-800/30 border border-zinc-850 text-xs text-zinc-400 font-semibold">
               <ThumbsUp className="w-3.5 h-3.5" />
-              <span>{upvoteCount} upvotes</span>
+              <span>{upvoteCount} {t('card.upvotes')}</span>
             </div>
           )}
 
@@ -129,7 +122,7 @@ export function ReportCard({ report, onUpvote, isUpvoted = false }: ReportCardPr
             href={`/reports/${report.id}`}
             className="inline-flex items-center gap-1 text-xs font-bold text-purple-400 hover:text-purple-300 transition-colors group/link"
           >
-            <span>Details</span>
+            <span>{t('card.details')}</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover/link:translate-x-1 transition-transform" />
           </Link>
         </div>

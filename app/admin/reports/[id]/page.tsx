@@ -8,13 +8,14 @@ import { ArrowLeft, Shield, CheckCircle, XCircle, Play, AlertCircle, FileText, I
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import { StatusBadge } from '@/components/StatusBadge'
 import imageCompression from 'browser-image-compression'
+import { useLanguage } from '@/lib/LanguageContext'
 
 // Dynamically load the Leaflet Map
 const MapOverview = dynamic(() => import('@/components/MapOverview'), {
   ssr: false,
   loading: () => (
     <div className="w-full h-[250px] rounded-2xl bg-zinc-900 border border-zinc-800 animate-pulse flex items-center justify-center">
-      <span className="text-zinc-500 text-sm">Loading map location...</span>
+      <span className="text-zinc-500 text-sm">Loading...</span>
     </div>
   ),
 })
@@ -23,6 +24,7 @@ export default function AdminReportDetailPage() {
   const params = useParams()
   const router = useRouter()
   const id = params.id as string
+  const { t, language } = useLanguage()
 
   const [report, setReport] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -303,20 +305,20 @@ export default function AdminReportDetailPage() {
     <div className="container mx-auto max-w-4xl px-4 py-10 md:py-16">
       <Link
         href="/admin"
-        className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 mb-6 transition"
+        className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 mb-6 transition cursor-pointer"
       >
         <ArrowLeft className="w-4 h-4" />
-        Back to Dashboard
+        {t('adminDetail.btnBackDash')}
       </Link>
 
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-extrabold text-white">Manage Ticket</h1>
+          <h1 className="text-2xl font-extrabold text-white">{t('adminDetail.title')}</h1>
           <p className="text-zinc-500 text-xs mt-0.5">ID: {report.id}</p>
         </div>
         <div className="flex items-center gap-2">
           <Shield className="w-4.5 h-4.5 text-purple-400" />
-          <span className="text-xs font-bold text-zinc-400">Admin Mode</span>
+          <span className="text-xs font-bold text-zinc-400">{t('nav.adminDashboard')}</span>
         </div>
       </div>
 
@@ -333,7 +335,7 @@ export default function AdminReportDetailPage() {
           <div className="p-6 md:p-8 rounded-3xl glass-panel space-y-6">
             <div className="flex justify-between items-center gap-4">
               <span className="text-xs font-bold text-zinc-400 bg-zinc-900 border border-zinc-850 px-2.5 py-1 rounded-full uppercase">
-                {report.category.replace('_', ' ')}
+                {t('category.' + report.category)}
               </span>
               <StatusBadge status={report.status} />
             </div>
@@ -351,9 +353,9 @@ export default function AdminReportDetailPage() {
                 className="w-24 h-24 object-cover rounded-xl border border-zinc-900 shrink-0"
               />
               <div className="flex flex-col justify-between py-1">
-                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Citizen Evidence</span>
+                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Evidence</span>
                 <span className="text-xs text-zinc-300 font-medium line-clamp-2 leading-normal">
-                  Uploaded at: {new Date(report.created_at).toLocaleString()}
+                  {t('card.reportedOn')}: {new Date(report.created_at).toLocaleString(language === 'en' ? 'en-US' : language)}
                 </span>
                 <a
                   href={report.image_url}
@@ -370,7 +372,7 @@ export default function AdminReportDetailPage() {
           <div className="p-6 md:p-8 rounded-3xl glass-panel space-y-6">
             <h3 className="text-sm font-bold text-white border-b border-zinc-800 pb-3 flex items-center gap-1.5">
               <FileText className="w-4.5 h-4.5 text-purple-400" />
-              Administrative Actions
+              {t('adminDetail.updateStatus')}
             </h3>
 
             {/* If resolved or rejected, let them reset */}
@@ -382,7 +384,7 @@ export default function AdminReportDetailPage() {
                 <button
                   onClick={handleResetTicket}
                   disabled={submitting}
-                  className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700/80 text-zinc-300 hover:text-white border border-zinc-750 text-xs font-bold transition disabled:opacity-50"
+                  className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-750 text-zinc-300 hover:text-white border border-zinc-750 text-xs font-bold transition disabled:opacity-50 cursor-pointer"
                 >
                   Reset Status to Pending
                 </button>
@@ -395,7 +397,7 @@ export default function AdminReportDetailPage() {
                     <button
                       onClick={handleStartFix}
                       disabled={submitting}
-                      className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-blue-600/10 transition disabled:opacity-50"
+                      className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-blue-600/10 transition disabled:opacity-50 cursor-pointer"
                     >
                       <Play className="w-4 h-4 fill-white text-white" />
                       <span>Start Work / Verify</span>
@@ -405,7 +407,7 @@ export default function AdminReportDetailPage() {
                   {report.status === 'in_progress' && (
                     <button
                       onClick={() => setActionTab('resolve')}
-                      className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
+                      className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
                         actionTab === 'resolve'
                           ? 'bg-emerald-500/10 text-emerald-450 border border-emerald-500/30'
                           : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md'
@@ -418,7 +420,7 @@ export default function AdminReportDetailPage() {
 
                   <button
                     onClick={() => setActionTab('reject')}
-                    className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition ${
+                    className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
                       actionTab === 'reject'
                         ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
                         : 'bg-zinc-850 hover:bg-zinc-800 text-zinc-350 hover:text-zinc-200 border border-zinc-800'
@@ -486,7 +488,7 @@ export default function AdminReportDetailPage() {
                     <button
                       type="submit"
                       disabled={submitting || compressing}
-                      className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition disabled:opacity-50"
+                      className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition disabled:opacity-50 cursor-pointer"
                     >
                       {submitting ? 'Updating status...' : 'Submit Work Completion'}
                     </button>
@@ -513,7 +515,7 @@ export default function AdminReportDetailPage() {
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition disabled:opacity-50"
+                      className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition disabled:opacity-50 cursor-pointer"
                     >
                       {submitting ? 'Updating status...' : 'Reject Ticket'}
                     </button>
@@ -527,13 +529,13 @@ export default function AdminReportDetailPage() {
         {/* Right: Map Pin Card */}
         <div className="lg:col-span-5 space-y-6">
           <div className="p-5 rounded-3xl glass-panel space-y-4">
-            <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider">Report Location</h3>
+            <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider">{t('detail.coordinates')}</h3>
             <div className="h-[200px]">
               <MapOverview reports={mockReportList} zoom={15} />
             </div>
             <div className="text-[10px] text-zinc-500 font-mono space-y-1 mt-2">
               <div className="flex items-start gap-1.5">
-                <span className="font-bold text-zinc-400 shrink-0">Address:</span>
+                <span className="font-bold text-zinc-400 shrink-0">{t('detail.address')}:</span>
                 <span>{report.address}</span>
               </div>
               <div className="flex items-center gap-1.5 mt-2">
