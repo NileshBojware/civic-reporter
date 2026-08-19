@@ -147,8 +147,8 @@ export function Navbar() {
           })}
         </nav>
 
-        {/* Desktop Auth and User Info */}
-        <div className="hidden md:flex items-center gap-4">
+        {/* Right side container */}
+        <div className="flex items-center gap-3">
           {/* Language Selector */}
           <div className="relative">
             <button
@@ -189,49 +189,52 @@ export function Navbar() {
             )}
           </div>
 
-          {user ? (
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 text-zinc-300 bg-zinc-900/60 border border-zinc-800 px-3.5 py-1.5 rounded-2xl text-xs font-semibold">
-                {profile?.role === 'admin' ? (
-                  <Shield className="w-3.5 h-3.5 text-purple-400" />
-                ) : (
-                  <User className="w-3.5 h-3.5 text-zinc-400" />
-                )}
-                <span>{profile?.full_name || t('nav.citizen')}</span>
+          {/* Desktop Auth and User Info */}
+          <div className="hidden md:flex items-center gap-4">
+            {user ? (
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 text-zinc-300 bg-zinc-900/60 border border-zinc-800 px-3.5 py-1.5 rounded-2xl text-xs font-semibold">
+                  {profile?.role === 'admin' ? (
+                    <Shield className="w-3.5 h-3.5 text-purple-400" />
+                  ) : (
+                    <User className="w-3.5 h-3.5 text-zinc-400" />
+                  )}
+                  <span>{profile?.full_name || t('nav.citizen')}</span>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="flex items-center gap-1.5 px-4.5 py-2 rounded-2xl bg-zinc-800 hover:bg-zinc-700/80 text-zinc-300 hover:text-white border border-zinc-700/50 text-xs font-bold transition-all cursor-pointer"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>{t('nav.logOut')}</span>
+                </button>
               </div>
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-1.5 px-4.5 py-2 rounded-2xl bg-zinc-800 hover:bg-zinc-700/80 text-zinc-300 hover:text-white border border-zinc-700/50 text-xs font-bold transition-all cursor-pointer"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span>{t('nav.logOut')}</span>
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              <Link
-                href="/login"
-                className="text-xs font-bold text-zinc-400 hover:text-zinc-100 transition-colors px-4 py-2"
-              >
-                {t('nav.logIn')}
-              </Link>
-              <Link
-                href="/signup"
-                className="text-xs font-extrabold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 px-4.5 py-2 rounded-2xl shadow-lg shadow-purple-600/25 hover:shadow-purple-600/35 hover:-translate-y-0.5 transition-all duration-200"
-              >
-                {t('nav.signUp')}
-              </Link>
-            </div>
-          )}
-        </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/login"
+                  className="text-xs font-bold text-zinc-400 hover:text-zinc-100 transition-colors px-4 py-2"
+                >
+                  {t('nav.logIn')}
+                </Link>
+                <Link
+                  href="/signup"
+                  className="text-xs font-extrabold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 px-4.5 py-2 rounded-2xl shadow-lg shadow-purple-600/25 hover:shadow-purple-600/35 hover:-translate-y-0.5 transition-all duration-200"
+                >
+                  {t('nav.signUp')}
+                </Link>
+              </div>
+            )}
+          </div>
 
-        {/* Mobile Menu Toggle */}
-        <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="p-2 -mr-2 text-zinc-400 hover:text-zinc-200 md:hidden transition cursor-pointer"
-        >
-          {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
+          {/* Mobile Menu Toggle */}
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 -mr-2 text-zinc-400 hover:text-zinc-200 md:hidden transition cursor-pointer"
+          >
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Drawer Menu */}
