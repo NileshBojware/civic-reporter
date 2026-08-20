@@ -110,7 +110,7 @@ export default function AdminDashboardPage() {
     const matchSearch =
       report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       report.address.toLowerCase().includes(searchTerm.toLowerCase())
-    
+
     const matchStatus = statusFilter === 'all' || report.status === statusFilter
 
     return matchSearch && matchStatus
@@ -157,7 +157,7 @@ export default function AdminDashboardPage() {
         <div className="lg:col-span-8 p-6 rounded-3xl glass-panel space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <h3 className="text-base font-bold text-white">{t('myreports.title')}</h3>
-            
+
             {/* Search and Filters toolbar */}
             <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
               <div className="relative flex-grow sm:flex-grow-0">

@@ -4,7 +4,8 @@ import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { MapPin, Image as ImageIcon, Sparkles, AlertTriangle, CheckCircle, Navigation, ArrowLeft } from 'lucide-react'
+import { MapPin, Image as ImageIcon, Sparkles, AlertTriangle, CheckCircle, Navigation, ArrowLeft, Camera, RefreshCw, X, Check } from 'lucide-react'
+import { extractGPSFromJPEG, GPSCoordinates } from '@/lib/exif'
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import imageCompression from 'browser-image-compression'
 import confetti from 'canvas-confetti'
@@ -48,6 +49,26 @@ export default function ReportPage() {
   const [compressing, setCompressing] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+
+  // Camera & Geotag States
+  const [cameraActive, setCameraActive] = useState(false)
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment')
+  const [autoGeotag, setAutoGeotag] = useState(true)
+  const [detectedGps, setDetectedGps] = useState<GPSCoordinates | null>(null)
+  const [showGpsDialog, setShowGpsDialog] = useState(false)
+
+  const videoRef = React.useRef<HTMLVideoElement | null>(null)
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null)
+
+  // Cleanup camera stream on unmount
+  useEffect(() => {
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop())
+      }
+    }
+  }, [cameraStream])
 
   // Geolocation trigger state
   const [locating, setLocating] = useState(false)
@@ -142,15 +163,10 @@ export default function ReportPage() {
     }
   }
 
-  // Client side image compression
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files || files.length === 0) return
-
-    const file = files[0]
+  // Client side image compression and processing helper
+  const processAndPreviewPhoto = async (file: File) => {
     setCompressing(true)
-
-    // Option details for browser-image-compression
+    setError('')
     const options = {
       maxSizeMB: 0.15, // Compress to <150kb
       maxWidthOrHeight: 1024,
@@ -173,6 +189,153 @@ export default function ReportPage() {
     } finally {
       setCompressing(false)
     }
+  }
+
+  // Handle file selection from browse input
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+
+    const file = files[0]
+    
+    // Try to read EXIF before compression
+    if (file.type === 'image/jpeg') {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        if (event.target?.result instanceof ArrayBuffer) {
+          try {
+            const gps = extractGPSFromJPEG(event.target.result)
+            if (gps) {
+              setDetectedGps(gps)
+              setShowGpsDialog(true)
+            }
+          } catch (err) {
+            console.error('EXIF reading error:', err)
+          }
+        }
+      }
+      reader.readAsArrayBuffer(file)
+    }
+
+    await processAndPreviewPhoto(file)
+  }
+
+  // Camera handling functions
+  const startCamera = async (mode: 'user' | 'environment' = 'environment') => {
+    try {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop())
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: mode, width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false
+      })
+      setCameraStream(stream)
+      setCameraActive(true)
+      
+      // Delay source attachment slightly to ensure element is ref-populated
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+        }
+      }, 50)
+    } catch (err) {
+      console.error('Camera access failed:', err)
+      alert(t('form.cameraNotSupported'))
+    }
+  }
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop())
+      setCameraStream(null)
+    }
+    setCameraActive(false)
+  }
+
+  const toggleCamera = () => {
+    const nextMode = facingMode === 'environment' ? 'user' : 'environment'
+    setFacingMode(nextMode)
+    startCamera(nextMode)
+  }
+
+  const capturePhoto = () => {
+    if (!videoRef.current) return
+    const video = videoRef.current
+    const canvas = document.createElement('canvas')
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+    
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+    
+    canvas.toBlob(async (blob) => {
+      if (!blob) return
+      
+      const file = new File([blob], `camera_capture_${Date.now()}.jpg`, { type: 'image/jpeg' })
+      
+      stopCamera()
+      await processAndPreviewPhoto(file)
+
+      if (autoGeotag) {
+        getDeviceLocationForGeotag()
+      }
+    }, 'image/jpeg', 0.95)
+  }
+
+  const getDeviceLocationForGeotag = () => {
+    if (!navigator.geolocation) return
+    
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const { latitude: lat, longitude: lng } = position.coords
+        setLatitude(lat)
+        setLongitude(lng)
+        
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+          )
+          if (res.ok) {
+            const data = await res.json()
+            setAddress(data.display_name || `Coordinates: ${lat.toFixed(5)}, ${lng.toFixed(5)}`)
+          } else {
+            setAddress(`Coordinates: ${lat.toFixed(5)}, ${lng.toFixed(5)}`)
+          }
+        } catch (err) {
+          setAddress(`Coordinates: ${lat.toFixed(5)}, ${lng.toFixed(5)}`)
+        }
+      },
+      (err) => {
+        console.error('Failed to get location for geotag:', err)
+      },
+      { enableHighAccuracy: true, timeout: 5000 }
+    )
+  }
+
+  const applyPhotoGps = async () => {
+    if (!detectedGps) return
+    const { latitude: lat, longitude: lng } = detectedGps
+    setLatitude(lat)
+    setLongitude(lng)
+    
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`
+      )
+      if (res.ok) {
+        const data = await res.json()
+        setAddress(data.display_name || `Coordinates: ${lat.toFixed(5)}, ${lng.toFixed(5)}`)
+      } else {
+        setAddress(`Coordinates: ${lat.toFixed(5)}, ${lng.toFixed(5)}`)
+      }
+    } catch (err) {
+      setAddress(`Coordinates: ${lat.toFixed(5)}, ${lng.toFixed(5)}`)
+    }
+    
+    setShowGpsDialog(false)
   }
 
   // Trigger duplicate check when category + coordinates are set
@@ -446,43 +609,169 @@ export default function ReportPage() {
             {t('form.fieldPhoto')} *
           </h3>
 
-          <div className="flex flex-col items-center justify-center border-2 border-dashed border-zinc-800 hover:border-purple-500/40 rounded-2xl p-6 transition cursor-pointer relative bg-zinc-900/10">
-            <input
-              type="file"
-              accept="image/*"
-              required
-              onChange={handlePhotoUpload}
-              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
-            />
-            {photoUrl ? (
-              <div className="w-full text-center relative z-20">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={photoUrl}
-                  alt="Evidence Preview"
-                  className="max-h-52 rounded-xl mx-auto border border-zinc-850 mb-3 object-contain"
-                />
-                <span className="text-[10px] text-zinc-500 font-bold block">
-                  Compressed size: {(photo!.size / 1024).toFixed(1)} KB
-                </span>
-                <span className="text-xs text-purple-400 font-bold mt-2 inline-block">
-                  Click or drag to replace photo
-                </span>
+          {cameraActive ? (
+            <div className="relative w-full rounded-2xl overflow-hidden border border-zinc-800 bg-black flex flex-col items-center p-2">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                className="w-full max-h-[350px] object-cover rounded-xl"
+              />
+              {/* Camera Overlays / Controls */}
+              <div className="absolute bottom-6 left-0 right-0 flex items-center justify-center gap-6 z-20">
+                {/* Cancel Camera */}
+                <button
+                  type="button"
+                  onClick={stopCamera}
+                  className="p-3 rounded-full bg-zinc-900/90 hover:bg-zinc-800 text-zinc-400 hover:text-white transition border border-zinc-800 backdrop-blur-sm cursor-pointer shadow-lg"
+                  title={t('form.closeCamera')}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+                
+                {/* Shutter Button */}
+                <button
+                  type="button"
+                  onClick={capturePhoto}
+                  className="w-14 h-14 rounded-full bg-white hover:bg-zinc-200 border-4 border-zinc-950 flex items-center justify-center transition hover:scale-105 shadow-xl cursor-pointer"
+                  title={t('form.capturePhoto')}
+                >
+                  <div className="w-6 h-6 rounded-full bg-purple-600 animate-pulse" />
+                </button>
+
+                {/* Switch Camera */}
+                <button
+                  type="button"
+                  onClick={toggleCamera}
+                  className="p-3 rounded-full bg-zinc-900/90 hover:bg-zinc-800 text-zinc-400 hover:text-white transition border border-zinc-800 backdrop-blur-sm cursor-pointer shadow-lg"
+                  title={t('form.switchCamera')}
+                >
+                  <RefreshCw className="w-5 h-5" />
+                </button>
               </div>
-            ) : (
-              <div className="text-center">
-                <div className="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center mx-auto mb-3 border border-zinc-800">
-                  <ImageIcon className="w-5 h-5 text-zinc-500" />
+              <div className="absolute top-4 left-4 bg-zinc-900/90 backdrop-blur-sm text-[10px] font-bold text-purple-400 px-3 py-1 rounded-full border border-purple-500/20 flex items-center gap-1.5 shadow-lg">
+                <span className="w-2 h-2 rounded-full bg-purple-500 animate-ping" />
+                <span>Live Camera</span>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center border-2 border-dashed border-zinc-800 hover:border-purple-500/40 rounded-2xl p-6 transition bg-zinc-900/10 relative">
+              <input
+                type="file"
+                accept="image/*"
+                ref={fileInputRef}
+                onChange={handlePhotoUpload}
+                className="hidden"
+              />
+              
+              {photoUrl ? (
+                <div className="w-full text-center relative z-20">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={photoUrl}
+                    alt="Evidence Preview"
+                    className="max-h-52 rounded-xl mx-auto border border-zinc-850 mb-3 object-contain"
+                  />
+                  <span className="text-[10px] text-zinc-500 font-bold block">
+                    Compressed size: {(photo!.size / 1024).toFixed(1)} KB
+                  </span>
+                  
+                  <div className="flex justify-center gap-3 mt-4">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-bold rounded-xl transition cursor-pointer"
+                    >
+                      {t('form.btnBrowse')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => startCamera('environment')}
+                      className="px-4 py-2 bg-purple-600/10 hover:bg-purple-600/20 border border-purple-500/20 text-purple-400 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                      {t('form.openCamera')}
+                    </button>
+                  </div>
                 </div>
-                <p className="text-sm font-semibold text-zinc-200 mb-1">Click to select photo evidence</p>
-                <p className="text-xs text-zinc-500">{t('form.photoHelp')}</p>
-              </div>
-            )}
-          </div>
+              ) : (
+                <div className="text-center py-4">
+                  <div className="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center mx-auto mb-3 border border-zinc-800">
+                    <ImageIcon className="w-5 h-5 text-zinc-500" />
+                  </div>
+                  <p className="text-sm font-semibold text-zinc-200 mb-1">Select photo evidence</p>
+                  <p className="text-xs text-zinc-500 mb-5">{t('form.photoHelp')}</p>
+                  
+                  <div className="flex flex-col sm:flex-row justify-center items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full sm:w-auto px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-bold rounded-xl transition cursor-pointer"
+                    >
+                      {t('form.btnBrowse')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => startCamera('environment')}
+                      className="w-full sm:w-auto px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-purple-600/10"
+                    >
+                      <Camera className="w-3.5 h-3.5" />
+                      {t('form.openCamera')}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {compressing && (
             <div className="text-center py-2 text-xs text-purple-400 font-semibold animate-pulse">
               Compressing...
+            </div>
+          )}
+
+          {/* Device Geotag toggle */}
+          {!photoUrl && !cameraActive && (
+            <div className="flex items-center gap-2 pt-2 border-t border-zinc-800/40">
+              <input
+                type="checkbox"
+                id="deviceGeotag"
+                checked={autoGeotag}
+                onChange={(e) => setAutoGeotag(e.target.checked)}
+                className="rounded border-zinc-800 text-purple-600 focus:ring-purple-500 cursor-pointer"
+              />
+              <label htmlFor="deviceGeotag" className="text-xs font-semibold text-zinc-400 cursor-pointer select-none">
+                {t('form.deviceGeotagToggle')}
+              </label>
+            </div>
+          )}
+
+          {/* EXIF GPS detected Dialog banner */}
+          {showGpsDialog && detectedGps && (
+            <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20 space-y-3 animate-fade-in">
+              <div className="flex items-start gap-2.5">
+                <MapPin className="w-5 h-5 text-purple-400 shrink-0 mt-0.5 animate-bounce" />
+                <div>
+                  <h4 className="text-xs font-bold text-white">{t('form.gpsDetectedTitle')}</h4>
+                  <p className="text-[11px] text-zinc-400 mt-0.5 leading-relaxed">{t('form.gpsDetectedDesc')}</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={applyPhotoGps}
+                  className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-extrabold transition cursor-pointer shadow-sm"
+                >
+                  {t('form.btnApplyGps')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowGpsDialog(false)}
+                  className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-350 text-[10px] font-bold transition cursor-pointer"
+                >
+                  {t('form.btnIgnoreGps')}
+                </button>
+              </div>
             </div>
           )}
         </div>
