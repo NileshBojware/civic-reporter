@@ -171,7 +171,7 @@ export default function ReportDetailPage() {
               <StatusBadge status={report.status} />
             </div>
 
-            <h1 className="text-xl md:text-2xl font-extrabold text-white leading-snug mb-4">
+            <h1 className="text-xl md:text-2xl font-extrabold text-zinc-100 leading-snug mb-4">
               {report.title}
             </h1>
 

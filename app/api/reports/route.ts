@@ -119,6 +119,25 @@ export async function POST(request: NextRequest) {
         ...newReportData,
       }
       db.reports.push(newReport)
+
+      // Trigger notifications for admins in mock mode
+      if (!db.notifications) {
+        db.notifications = []
+      }
+      const admins = db.profiles.filter((p) => p.role === 'admin')
+      admins.forEach((admin) => {
+        db.notifications.push({
+          id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          user_id: admin.id,
+          report_id: newReport.id,
+          title: 'New Issue Reported',
+          message: `A new issue has been reported: "${newReport.title}"`,
+          is_read: false,
+          type: 'new_report',
+          created_at: new Date().toISOString(),
+        })
+      })
+
       writeMockDb(db)
       return NextResponse.json(newReport, { status: 201 })
     }

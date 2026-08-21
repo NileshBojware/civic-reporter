@@ -103,7 +103,7 @@ export default function LandingPage() {
             <Flame className="w-3.5 h-3.5" />
             {t('hero.badge')}
           </span>
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-white mb-6 max-w-4xl leading-tight">
+          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight text-zinc-100 mb-6 max-w-4xl leading-tight">
             {t('hero.title1')} <br className="hidden md:inline" />
             <span className="bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
               {t('hero.title2')}
@@ -123,7 +123,7 @@ export default function LandingPage() {
             </Link>
             <Link
               href="/reports"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-white border border-zinc-800 hover:border-zinc-700 font-bold transition-all duration-200"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl bg-zinc-900 hover:bg-zinc-800 text-zinc-300 hover:text-zinc-100 border border-zinc-800 hover:border-zinc-700 font-bold transition-all duration-200"
             >
               <span>{t('hero.btnViewMap')}</span>
               <ChevronRight className="w-4 h-4" />
@@ -165,7 +165,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             {/* Map Explanation Info */}
             <div className="lg:col-span-4 space-y-6">
-              <h2 className="text-2xl md:text-3xl font-extrabold text-white leading-tight">
+              <h2 className="text-2xl md:text-3xl font-extrabold text-zinc-100 leading-tight">
                 {t('landing.mapTitle')}
               </h2>
               <p className="text-zinc-400 text-sm leading-relaxed">
@@ -201,7 +201,7 @@ export default function LandingPage() {
         <div className="container mx-auto max-w-6xl">
           <div className="flex items-center justify-between gap-4 mb-10">
             <div>
-              <h2 className="text-2xl md:text-3xl font-extrabold text-white">{t('landing.recentLogs')}</h2>
+              <h2 className="text-2xl md:text-3xl font-extrabold text-zinc-100">{t('landing.recentLogs')}</h2>
               <p className="text-zinc-400 text-xs md:text-sm mt-1">{t('landing.recentSub')}</p>
             </div>
             <Link

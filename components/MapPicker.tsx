@@ -42,10 +42,25 @@ function MapViewSync({ center }: { center: [number, number] }) {
 
 export default function MapPicker({ lat, lng, onChange }: MapPickerProps) {
   const [mounted, setMounted] = useState(false)
+  const [mapTheme, setMapTheme] = useState<'dark' | 'light'>('dark')
   const markerRef = useRef<any>(null)
 
   useEffect(() => {
     setMounted(true)
+    const isDark = document.documentElement.classList.contains('dark')
+    setMapTheme(isDark ? 'dark' : 'light')
+
+    const observer = new MutationObserver(() => {
+      const isDarkNow = document.documentElement.classList.contains('dark')
+      setMapTheme(isDarkNow ? 'dark' : 'light')
+    })
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    })
+
+    return () => observer.disconnect()
   }, [])
 
   const position: [number, number] = useMemo(() => [lat, lng], [lat, lng])
@@ -80,8 +95,12 @@ export default function MapPicker({ lat, lng, onChange }: MapPickerProps) {
         className="w-full h-full z-0"
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://carto.com/attributions">CARTO</a> contributors'
+          url={
+            mapTheme === 'dark'
+              ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+              : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+          }
         />
         <DraggableMarker
           position={position}

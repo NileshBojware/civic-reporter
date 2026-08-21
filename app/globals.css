@@ -1,8 +1,75 @@
 @import "tailwindcss";
 
+@theme {
+  --color-zinc-50: var(--theme-zinc-50);
+  --color-zinc-100: var(--theme-zinc-100);
+  --color-zinc-200: var(--theme-zinc-200);
+  --color-zinc-300: var(--theme-zinc-300);
+  --color-zinc-400: var(--theme-zinc-400);
+  --color-zinc-500: var(--theme-zinc-500);
+  --color-zinc-600: var(--theme-zinc-600);
+  --color-zinc-700: var(--theme-zinc-700);
+  --color-zinc-750: var(--theme-zinc-750);
+  --color-zinc-800: var(--theme-zinc-800);
+  --color-zinc-850: var(--theme-zinc-850);
+  --color-zinc-900: var(--theme-zinc-900);
+  --color-zinc-950: var(--theme-zinc-950);
+}
+
 :root {
+  /* Defaults for Light Mode */
+  --theme-zinc-50: #09090b;   /* Inverted: In light mode, 50 is very dark text */
+  --theme-zinc-100: #18181b;  /* In light mode, 100 is dark text */
+  --theme-zinc-200: #27272a;  /* In light mode, 200 is dark gray text */
+  --theme-zinc-300: #3f3f46;  /* In light mode, 300 is gray text */
+  --theme-zinc-400: #52525b;  /* In light mode, 400 is muted text */
+  --theme-zinc-500: #71717a;  /* In light mode, 500 is muted gray */
+  --theme-zinc-600: #a1a1aa;  /* In light mode, 600 is light gray */
+  --theme-zinc-700: #d4d4d8;  /* In light mode, 700 is border gray */
+  --theme-zinc-750: #e4e4e7;  /* Custom: lighter gray */
+  --theme-zinc-800: #e4e4e7;  /* In light mode, 800 is border/panel bg */
+  --theme-zinc-850: #f4f4f5;  /* Custom: very light gray */
+  --theme-zinc-900: #f4f4f5;  /* In light mode, 900 is light panel bg */
+  --theme-zinc-950: #ffffff;  /* In light mode, 950 is white page bg */
+
+  --background: #ffffff;
+  --foreground: #09090b;
+  
+  --grid-color: rgba(9, 9, 11, 0.04);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(9, 9, 11, 0.08);
+
+  --popup-bg: rgba(255, 255, 255, 0.98);
+  --popup-border: #e4e4e7;
+  --popup-text: #18181b;
+}
+
+.dark {
+  /* Defaults for Dark Mode */
+  --theme-zinc-50: #fafafa;
+  --theme-zinc-100: #f4f4f5;
+  --theme-zinc-200: #e4e4e7;
+  --theme-zinc-300: #d4d4d8;
+  --theme-zinc-400: #a1a1aa;
+  --theme-zinc-500: #71717a;
+  --theme-zinc-600: #52525b;
+  --theme-zinc-700: #3f3f46;
+  --theme-zinc-750: #303036;
+  --theme-zinc-800: #27272a;
+  --theme-zinc-850: #202024;
+  --theme-zinc-900: #18181b;
+  --theme-zinc-950: #030303;
+
   --background: #030303;
   --foreground: #f4f4f5;
+
+  --grid-color: rgba(63, 63, 70, 0.05);
+  --glass-bg: rgba(15, 15, 20, 0.6);
+  --glass-border: rgba(63, 63, 70, 0.2);
+
+  --popup-bg: rgba(15, 15, 20, 0.98);
+  --popup-border: rgba(63, 63, 70, 0.4);
+  --popup-text: #f4f4f5;
 }
 
 body {
@@ -16,15 +83,15 @@ body {
 .bg-grid-pattern {
   background-size: 40px 40px;
   background-image: 
-    linear-gradient(to right, rgba(63, 63, 70, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(63, 63, 70, 0.05) 1px, transparent 1px);
+    linear-gradient(to right, var(--grid-color) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-color) 1px, transparent 1px);
 }
 
 /* Glassmorphism utility */
 .glass-panel {
-  background: rgba(15, 15, 20, 0.6);
+  background: var(--glass-bg);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(63, 63, 70, 0.2);
+  border: 1px solid var(--glass-border);
 }
 
 /* Custom scrollbar */
@@ -33,51 +100,53 @@ body {
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #09090b;
+  background: var(--theme-zinc-950);
 }
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: var(--theme-zinc-800);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: var(--theme-zinc-700);
 }
 
-/* Leaflet Custom styling to integrate with dark theme */
+/* Leaflet Custom styling to integrate with dark/light themes */
 .leaflet-container {
   font-family: inherit !important;
-  background-color: #09090b !important;
+  background-color: var(--theme-zinc-950) !important;
 }
 
 .leaflet-bar {
-  border: 1px solid rgba(63, 63, 70, 0.3) !important;
+  border: 1px solid var(--glass-border) !important;
   box-shadow: none !important;
 }
 
 .leaflet-bar a {
-  background-color: rgba(15, 15, 20, 0.95) !important;
-  color: #a1a1aa !important;
-  border-bottom: 1px solid rgba(63, 63, 70, 0.2) !important;
+  background-color: var(--glass-bg) !important;
+  color: var(--theme-zinc-400) !important;
+  border-bottom: 1px solid var(--glass-border) !important;
   transition: all 0.2s;
 }
 
 .leaflet-bar a:hover {
-  background-color: #18181b !important;
-  color: #f4f4f5 !important;
+  background-color: var(--theme-zinc-900) !important;
+  color: var(--theme-zinc-100) !important;
 }
 
 .leaflet-popup-content-wrapper {
-  background: rgba(255, 255, 255, 0.98) !important;
-  border: 1px solid #e4e4e7 !important;
+  background: var(--popup-bg) !important;
+  border: 1px solid var(--popup-border) !important;
+  color: var(--popup-text) !important;
   border-radius: 16px !important;
   box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3) !important;
 }
 
 .leaflet-popup-tip {
-  background: #ffffff !important;
+  background: var(--popup-bg) !important;
 }
 
 .custom-leaflet-popup .leaflet-popup-content {
   margin: 12px 14px !important;
   line-height: inherit !important;
 }
+

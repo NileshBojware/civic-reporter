@@ -35,10 +35,22 @@ export interface ReportVote {
   user_id: string
 }
 
+export interface MockNotification {
+  id: string
+  user_id: string
+  report_id: string
+  title: string
+  message: string
+  is_read: boolean
+  type: 'status_change' | 'new_report'
+  created_at: string
+}
+
 interface MockData {
   profiles: Profile[]
   reports: Report[]
   report_votes: ReportVote[]
+  notifications: MockNotification[]
 }
 
 const defaultData: MockData = {
@@ -107,6 +119,18 @@ const defaultData: MockData = {
   ],
   report_votes: [
     { report_id: 'report-2', user_id: 'citizen-id-123' }
+  ],
+  notifications: [
+    {
+      id: 'notif-1',
+      user_id: 'citizen-id-123',
+      report_id: 'report-3',
+      title: 'Issue Status Updated',
+      message: 'Your reported issue "Water leaking from main line" status has been changed to resolved.',
+      is_read: false,
+      type: 'status_change',
+      created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+    }
   ]
 }
 

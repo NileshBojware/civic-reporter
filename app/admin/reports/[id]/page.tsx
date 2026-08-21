@@ -284,7 +284,7 @@ export default function AdminReportDetailPage() {
       <div className="flex-grow flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-md p-8 rounded-3xl glass-panel text-center">
           <AlertTriangle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-white mb-2">Access Denied</h2>
+          <h2 className="text-xl font-bold text-zinc-100 mb-2">Access Denied</h2>
           <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
             Admin authorization required.
           </p>
@@ -313,7 +313,7 @@ export default function AdminReportDetailPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-extrabold text-white">{t('adminDetail.title')}</h1>
+          <h1 className="text-2xl font-extrabold text-zinc-100">{t('adminDetail.title')}</h1>
           <p className="text-zinc-500 text-xs mt-0.5">ID: {report.id}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -341,7 +341,7 @@ export default function AdminReportDetailPage() {
             </div>
 
             <div>
-              <h2 className="text-lg font-bold text-white mb-2">{report.title}</h2>
+              <h2 className="text-lg font-bold text-zinc-100 mb-2">{report.title}</h2>
               <p className="text-zinc-400 text-sm leading-relaxed">{report.description || 'No description.'}</p>
             </div>
 
@@ -370,7 +370,7 @@ export default function AdminReportDetailPage() {
 
           {/* Action Dashboard Panel */}
           <div className="p-6 md:p-8 rounded-3xl glass-panel space-y-6">
-            <h3 className="text-sm font-bold text-white border-b border-zinc-800 pb-3 flex items-center gap-1.5">
+            <h3 className="text-sm font-bold text-zinc-100 border-b border-zinc-800 pb-3 flex items-center gap-1.5">
               <FileText className="w-4.5 h-4.5 text-purple-400" />
               {t('adminDetail.updateStatus')}
             </h3>
@@ -379,7 +379,7 @@ export default function AdminReportDetailPage() {
             {(report.status === 'resolved' || report.status === 'rejected') ? (
               <div className="space-y-4">
                 <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-850 text-xs text-zinc-400">
-                  This ticket has been finalized as <span className="font-bold uppercase text-white">{report.status}</span>. To make edits, reset its status.
+                  This ticket has been finalized as <span className="font-bold uppercase text-zinc-100">{report.status}</span>. To make edits, reset its status.
                 </div>
                 <button
                   onClick={handleResetTicket}

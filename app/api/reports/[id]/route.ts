@@ -86,11 +86,32 @@ export async function PATCH(
         return NextResponse.json({ error: 'Report not found' }, { status: 404 })
       }
 
+      const oldReport = db.reports[reportIndex]
+      const statusChanged = oldReport.status !== status
+
       const updatedReport = {
-        ...db.reports[reportIndex],
+        ...oldReport,
         ...updates,
       }
       db.reports[reportIndex] = updatedReport
+
+      // Trigger status change notification for citizen in mock mode
+      if (statusChanged && updatedReport.user_id) {
+        if (!db.notifications) {
+          db.notifications = []
+        }
+        db.notifications.push({
+          id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          user_id: updatedReport.user_id,
+          report_id: updatedReport.id,
+          title: 'Issue Status Updated',
+          message: `Your reported issue "${updatedReport.title}" status has been changed to ${updatedReport.status}.`,
+          is_read: false,
+          type: 'status_change',
+          created_at: new Date().toISOString(),
+        })
+      }
+
       writeMockDb(db)
       return NextResponse.json(updatedReport)
     }

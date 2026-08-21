@@ -174,3 +174,82 @@ on storage.objects for insert
 to authenticated
 with check (bucket_id = 'reports-resolutions');
 
+
+-- 6. Notifications System
+
+-- Create notifications table
+create table if not exists public.notifications (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.profiles(id) on delete cascade,
+  report_id uuid references public.reports(id) on delete cascade,
+  title text not null,
+  message text not null,
+  is_read boolean default false,
+  type text not null check (type in ('status_change', 'new_report')),
+  created_at timestamptz default now()
+);
+
+-- Enable RLS
+alter table public.notifications enable row level security;
+
+-- Policies for notifications
+drop policy if exists "Allow users to read their own notifications" on public.notifications;
+drop policy if exists "Allow users to update their own notifications" on public.notifications;
+
+create policy "Allow users to read their own notifications"
+  on public.notifications for select
+  using (auth.uid() = user_id);
+
+create policy "Allow users to update their own notifications"
+  on public.notifications for update
+  using (auth.uid() = user_id);
+
+-- Trigger for Admin notification when a new report is created
+create or replace function public.handle_new_report_notification()
+returns trigger as $$
+declare
+  admin_rec record;
+begin
+  for admin_rec in select id from public.profiles where role = 'admin' loop
+    insert into public.notifications (user_id, report_id, title, message, type)
+    values (
+      admin_rec.id,
+      new.id,
+      'New Issue Reported',
+      'A new issue has been reported: "' || new.title || '"',
+      'new_report'
+    );
+  end loop;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists on_report_created on public.reports;
+create trigger on_report_created
+  after insert on public.reports
+  for each row execute procedure public.handle_new_report_notification();
+
+-- Trigger for Citizen notification when report status changes
+create or replace function public.handle_status_change_notification()
+returns trigger as $$
+begin
+  if (old.status is distinct from new.status) and new.user_id is not null then
+    insert into public.notifications (user_id, report_id, title, message, type)
+    values (
+      new.user_id,
+      new.id,
+      'Issue Status Updated',
+      'Your reported issue "' || new.title || '" status has been changed to ' || new.status || '.',
+      'status_change'
+    );
+  end if;
+  return new;
+end;
+$$ language plpgsql security definer;
+
+drop trigger if exists on_report_status_changed on public.reports;
+create trigger on_report_status_changed
+  after update on public.reports
+  for each row execute procedure public.handle_status_change_notification();
+
+

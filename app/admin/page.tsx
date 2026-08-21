@@ -84,7 +84,7 @@ export default function AdminDashboardPage() {
       <div className="flex-grow flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-md p-8 rounded-3xl glass-panel text-center">
           <AlertTriangle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-white mb-2">Access Denied</h2>
+          <h2 className="text-xl font-bold text-zinc-100 mb-2">Access Denied</h2>
           <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
             Admin authorization required. Please log in with municipal administrative credentials.
           </p>
@@ -125,7 +125,7 @@ export default function AdminDashboardPage() {
             <Shield className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-2xl font-extrabold text-white">{t('admin.dashboard')}</h1>
+            <h1 className="text-2xl font-extrabold text-zinc-100">{t('admin.dashboard')}</h1>
             <p className="text-zinc-500 text-xs mt-0.5">{t('admin.subtitle')}</p>
           </div>
         </div>
@@ -135,7 +135,7 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-850">
           <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider block">{t('hero.statsTotal')}</span>
-          <span className="text-2xl font-extrabold text-white block mt-1.5">{totalCount}</span>
+          <span className="text-2xl font-extrabold text-zinc-100 block mt-1.5">{totalCount}</span>
         </div>
         <div className="p-5 rounded-2xl bg-zinc-900/40 border border-zinc-850">
           <span className="text-zinc-500 text-[10px] font-bold uppercase tracking-wider block">{t('hero.statsPending')}</span>
@@ -156,7 +156,7 @@ export default function AdminDashboardPage() {
         {/* Reports Table Manager (8 cols) */}
         <div className="lg:col-span-8 p-6 rounded-3xl glass-panel space-y-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <h3 className="text-base font-bold text-white">{t('myreports.title')}</h3>
+            <h3 className="text-base font-bold text-zinc-100">{t('myreports.title')}</h3>
 
             {/* Search and Filters toolbar */}
             <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
@@ -248,7 +248,7 @@ export default function AdminDashboardPage() {
               <AiProBadge />
             </div>
 
-            <h4 className="text-sm font-extrabold text-white">AI Detection & Categorization</h4>
+            <h4 className="text-sm font-extrabold text-zinc-100">AI Detection & Categorization</h4>
             <p className="text-[11px] text-zinc-400 leading-relaxed">
               Unlock automatic computer vision models that verify upload evidence integrity, tag categories, and trigger auto-clustering to block duplicates on entry.
             </p>

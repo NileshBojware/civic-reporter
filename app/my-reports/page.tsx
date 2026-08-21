@@ -65,7 +65,7 @@ export default function MyReportsPage() {
       <div className="flex-grow flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-md p-8 rounded-3xl glass-panel text-center">
           <Info className="w-12 h-12 text-purple-400 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-white mb-2">Sign In Required</h2>
+          <h2 className="text-xl font-bold text-zinc-100 mb-2">Sign In Required</h2>
           <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
             Please log in to view your logged civic issue reports.
           </p>
@@ -84,7 +84,7 @@ export default function MyReportsPage() {
     <div className="container mx-auto max-w-4xl px-4 py-10 md:py-16">
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white">{t('myreports.title')}</h1>
+          <h1 className="text-2xl md:text-3xl font-extrabold text-zinc-100">{t('myreports.title')}</h1>
           <p className="text-zinc-400 text-sm mt-1">{t('myreports.subtitle')}</p>
         </div>
         <Link

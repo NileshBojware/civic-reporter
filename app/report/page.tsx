@@ -461,7 +461,7 @@ export default function ReportPage() {
       <div className="flex-grow flex items-center justify-center px-4 py-16">
         <div className="w-full max-w-md p-8 rounded-3xl glass-panel text-center">
           <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-white mb-2">Auth Required</h2>
+          <h2 className="text-xl font-bold text-zinc-100 mb-2">Auth Required</h2>
           <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
             You must be logged in as a citizen to submit a new civic issue report.
           </p>
@@ -496,7 +496,7 @@ export default function ReportPage() {
       </Link>
 
       <div className="mb-8">
-        <h1 className="text-2xl md:text-3xl font-extrabold text-white">{t('form.title')}</h1>
+        <h1 className="text-2xl md:text-3xl font-extrabold text-zinc-100">{t('form.title')}</h1>
         <p className="text-zinc-400 text-sm mt-1">{t('form.subtitle')}</p>
       </div>
 
@@ -509,7 +509,7 @@ export default function ReportPage() {
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Step 1: General Details */}
         <div className="p-6 md:p-8 rounded-3xl glass-panel space-y-6">
-          <h3 className="text-base font-bold text-white border-b border-zinc-800 pb-3 flex items-center gap-2">
+          <h3 className="text-base font-bold text-zinc-100 border-b border-zinc-800 pb-3 flex items-center gap-2">
             <span className="w-6 h-6 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center text-xs font-bold">1</span>
             {t('form.fieldTitle')}
           </h3>
@@ -569,7 +569,7 @@ export default function ReportPage() {
         {/* Step 2: Location Picker */}
         <div className="p-6 md:p-8 rounded-3xl glass-panel space-y-6">
           <div className="flex items-center justify-between gap-4 border-b border-zinc-800 pb-3">
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
+            <h3 className="text-base font-bold text-zinc-100 flex items-center gap-2">
               <span className="w-6 h-6 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center text-xs font-bold">2</span>
               {t('form.fieldLocation')}
             </h3>
@@ -604,7 +604,7 @@ export default function ReportPage() {
 
         {/* Step 3: Evidence Upload */}
         <div className="p-6 md:p-8 rounded-3xl glass-panel space-y-6">
-          <h3 className="text-base font-bold text-white border-b border-zinc-800 pb-3 flex items-center gap-2">
+          <h3 className="text-base font-bold text-zinc-100 border-b border-zinc-800 pb-3 flex items-center gap-2">
             <span className="w-6 h-6 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center text-xs font-bold">3</span>
             {t('form.fieldPhoto')} *
           </h3>
@@ -752,7 +752,7 @@ export default function ReportPage() {
               <div className="flex items-start gap-2.5">
                 <MapPin className="w-5 h-5 text-purple-400 shrink-0 mt-0.5 animate-bounce" />
                 <div>
-                  <h4 className="text-xs font-bold text-white">{t('form.gpsDetectedTitle')}</h4>
+                  <h4 className="text-xs font-bold text-zinc-100">{t('form.gpsDetectedTitle')}</h4>
                   <p className="text-[11px] text-zinc-400 mt-0.5 leading-relaxed">{t('form.gpsDetectedDesc')}</p>
                 </div>
               </div>

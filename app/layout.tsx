@@ -20,6 +20,24 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} h-full dark overflow-x-hidden`}>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  const theme = localStorage.getItem('theme');
+                  if (theme === 'light') {
+                    document.documentElement.classList.remove('dark');
+                  } else {
+                    document.documentElement.classList.add('dark');
+                  }
+                } catch (e) {}
+              })();
+            `
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-zinc-950 text-zinc-100 bg-grid-pattern relative overflow-x-hidden">
         <LanguageProvider>
           <div className="w-full min-h-full flex flex-col relative overflow-x-hidden">

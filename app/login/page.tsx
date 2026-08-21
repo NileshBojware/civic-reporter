@@ -153,7 +153,7 @@ export default function LoginPage() {
         <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
 
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-extrabold text-white">{t('login.title')}</h2>
+          <h2 className="text-2xl font-extrabold text-zinc-100">{t('login.title')}</h2>
           <p className="text-zinc-400 text-xs mt-1.5">{t('login.subtitle')}</p>
         </div>
 

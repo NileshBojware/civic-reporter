@@ -68,9 +68,24 @@ export default function MapOverview({
   zoom = 13,
 }: MapOverviewProps) {
   const [mounted, setMounted] = useState(false)
+  const [mapTheme, setMapTheme] = useState<'dark' | 'light'>('dark')
 
   useEffect(() => {
     setMounted(true)
+    const isDark = document.documentElement.classList.contains('dark')
+    setMapTheme(isDark ? 'dark' : 'light')
+
+    const observer = new MutationObserver(() => {
+      const isDarkNow = document.documentElement.classList.contains('dark')
+      setMapTheme(isDarkNow ? 'dark' : 'light')
+    })
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    })
+
+    return () => observer.disconnect()
   }, [])
 
   if (!mounted) {
@@ -101,8 +116,12 @@ export default function MapOverview({
         className="w-full h-full z-0"
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://carto.com/attributions">CARTO</a> contributors'
+          url={
+            mapTheme === 'dark'
+              ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
+              : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
+          }
         />
         {validReports.map((report) => (
           <Marker
@@ -115,13 +134,13 @@ export default function MapOverview({
                 <span className="text-[10px] uppercase font-bold text-zinc-400 block mb-1">
                   {CATEGORY_LABELS[report.category] || report.category}
                 </span>
-                <h4 className="text-sm font-semibold text-zinc-900 mb-1 leading-tight">
+                <h4 className="text-sm font-semibold text-zinc-50 mb-1 leading-tight">
                   {report.title}
                 </h4>
-                <p className="text-xs text-zinc-600 mb-3 truncate leading-normal">
+                <p className="text-xs text-zinc-300 mb-3 truncate leading-normal">
                   {report.address || 'No address provided'}
                 </p>
-                <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-zinc-100">
+                <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-zinc-800">
                   <StatusBadge status={report.status} />
                   <Link
                     href={`/reports/${report.id}`}
