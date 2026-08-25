@@ -192,7 +192,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'adminDetail.btnUpdate': 'Save Status Change',
     'adminDetail.btnUpdating': 'Saving...',
     'adminDetail.aiAnalysis': 'AI Priority Recommendations',
-    'adminDetail.aiDesc': 'CivicReporter AI scans report clarity, imagery, and duplications to assist human triage.',
+    'adminDetail.aiDesc': 'SheherCare AI scans report clarity, imagery, and duplications to assist human triage.',
     'adminDetail.severityScore': 'AI Severity Rating',
     'adminDetail.calculatedScore': 'Calculated Urgency Score',
     'adminDetail.upvoteImpact': 'Upvotes weight',

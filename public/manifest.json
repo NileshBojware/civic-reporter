@@ -1,6 +1,6 @@
 {
-  "name": "Civic Issue Reporter",
-  "short_name": "CivicReporter",
+  "name": "SheherCare",
+  "short_name": "SheherCare",
   "description": "Report local issues like potholes, streetlights, or waste with GPS coordinates and photos.",
   "start_url": "/",
   "display": "standalone",

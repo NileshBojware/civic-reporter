@@ -1,4 +1,4 @@
-const CACHE_NAME = 'civic-reporter-cache-v1'
+const CACHE_NAME = 'shehercare-cache-v1'
 const ASSETS_TO_CACHE = [
   '/',
   '/manifest.json',

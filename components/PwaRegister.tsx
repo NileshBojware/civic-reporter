@@ -9,10 +9,10 @@ export function PwaRegister() {
       navigator.serviceWorker
         .register('/sw.js')
         .then((registration) => {
-          console.log('CivicReporter PWA Service Worker registered with scope:', registration.scope)
+          console.log('SheherCare PWA Service Worker registered with scope:', registration.scope)
         })
         .catch((error) => {
-          console.error('CivicReporter PWA Service Worker registration failed:', error)
+          console.error('SheherCare PWA Service Worker registration failed:', error)
         })
     }
   }, [])

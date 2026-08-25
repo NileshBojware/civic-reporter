@@ -1,4 +1,4 @@
--- Database schema for Civic Issue Reporter
+-- Database schema for SheherCare
 
 -- 1. Create tables
 

@@ -234,7 +234,7 @@ export function Navbar() {
             <MapPin className="w-5 h-5" />
           </div>
           <span className="font-extrabold text-lg tracking-tight bg-gradient-to-r from-zinc-100 to-zinc-400 bg-clip-text text-transparent">
-            Civic<span className="text-purple-400">Reporter</span>
+            Sheher<span className="text-purple-400">Care</span>
           </span>
         </Link>
 
