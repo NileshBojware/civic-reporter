@@ -60,7 +60,7 @@ export async function PATCH(
       updates.resolved_image_url = resolved_image_url || null
       updates.resolved_note = resolved_note || 'Issue resolved successfully.'
     } else {
-      // pending or in_progress resets resolutions
+      // pending, verified, or in_progress — clear any resolution/rejection data
       updates.rejection_reason = null
       updates.resolved_image_url = null
       updates.resolved_note = null

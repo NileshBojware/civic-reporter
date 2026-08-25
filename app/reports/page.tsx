@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { Filter, Map, List, RefreshCw } from 'lucide-react'
+import { Filter, RefreshCw, Layers } from 'lucide-react'
 import { ReportCard } from '@/components/ReportCard'
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import { useLanguage } from '@/lib/LanguageContext'
@@ -11,8 +11,8 @@ import { useLanguage } from '@/lib/LanguageContext'
 const MapOverview = dynamic(() => import('@/components/MapOverview'), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-full min-h-[400px] rounded-3xl bg-zinc-900 border border-zinc-800 animate-pulse flex items-center justify-center">
-      <span className="text-zinc-500 text-sm">Loading...</span>
+    <div className="w-full h-full min-h-[400px] rounded-lg bg-surface-card border border-hairline animate-pulse flex items-center justify-center">
+      <span className="text-muted text-body-sm">Loading map...</span>
     </div>
   ),
 })
@@ -30,6 +30,7 @@ const CATEGORIES = [
 const STATUSES = [
   { value: 'all' },
   { value: 'pending' },
+  { value: 'verified' },
   { value: 'in_progress' },
   { value: 'resolved' },
   { value: 'rejected' },
@@ -113,22 +114,22 @@ export default function ReportsPage() {
   })
 
   return (
-    <div className="flex-grow flex flex-col h-[calc(100vh-4rem)]">
+    <div className="flex-grow flex flex-col h-[calc(100vh-4rem)] bg-canvas">
       {/* Top filter toolbar */}
-      <div className="w-full border-b border-zinc-900 bg-zinc-950/80 backdrop-blur px-4 md:px-6 py-4 flex flex-wrap items-center justify-between gap-4 z-10">
+      <div className="w-full border-b border-hairline bg-canvas/80 backdrop-blur px-4 md:px-6 py-4 flex flex-wrap items-center justify-between gap-4 z-10">
         <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-purple-400" />
-          <h2 className="text-sm font-bold text-zinc-200">{t('catalog.filters')}</h2>
+          <Filter className="w-4 h-4 text-brand-accent" />
+          <h2 className="text-body-sm font-bold text-ink">{t('catalog.filters')}</h2>
         </div>
 
         <div className="flex items-center gap-3 flex-grow md:flex-grow-0">
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-300 font-semibold focus:outline-none focus:border-purple-500 flex-grow md:flex-grow-0 cursor-pointer"
+            className="px-3 py-2 rounded-md bg-canvas border border-hairline text-caption text-body font-semibold focus:outline-none focus:border-primary flex-grow md:flex-grow-0 cursor-pointer h-10"
           >
             {CATEGORIES.map((c) => (
-              <option key={c.value} value={c.value} className="bg-zinc-900">
+              <option key={c.value} value={c.value}>
                 {c.value === 'all' ? t('catalog.allCategories') : t('category.' + c.value)}
               </option>
             ))}
@@ -137,10 +138,10 @@ export default function ReportsPage() {
           <select
             value={selectedStatus}
             onChange={(e) => setSelectedStatus(e.target.value)}
-            className="px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-300 font-semibold focus:outline-none focus:border-purple-500 flex-grow md:flex-grow-0 cursor-pointer"
+            className="px-3 py-2 rounded-md bg-canvas border border-hairline text-caption text-body font-semibold focus:outline-none focus:border-primary flex-grow md:flex-grow-0 cursor-pointer h-10"
           >
             {STATUSES.map((s) => (
-              <option key={s.value} value={s.value} className="bg-zinc-900">
+              <option key={s.value} value={s.value}>
                 {s.value === 'all' ? t('catalog.allStatuses') : t('status.' + s.value)}
               </option>
             ))}
@@ -148,54 +149,54 @@ export default function ReportsPage() {
 
           <button
             onClick={fetchReports}
-            className="p-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-400 hover:text-zinc-200 rounded-xl transition cursor-pointer"
+            className="p-2.5 bg-canvas hover:bg-surface-soft border border-hairline text-body hover:text-ink rounded-md transition cursor-pointer h-10 w-10 flex items-center justify-center"
             title={t('catalog.refresh')}
           >
             <RefreshCw className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Mobile View Toggle Buttons */}
-        <div className="flex md:hidden bg-zinc-900 p-0.5 rounded-xl border border-zinc-800">
+        {/* Mobile View Segmented Toggle (nav-pill-group) */}
+        <div className="flex md:hidden bg-surface-soft p-1 rounded-pill border border-hairline">
           <button
             onClick={() => setViewMode('list')}
-            className={`p-2 rounded-lg flex items-center justify-center cursor-pointer ${
-              viewMode === 'list' ? 'bg-purple-600 text-white' : 'text-zinc-400'
+            className={`px-4 py-1.5 rounded-pill text-caption font-bold transition-all cursor-pointer ${
+              viewMode === 'list' ? 'bg-canvas text-ink shadow-sm' : 'text-muted hover:text-body'
             }`}
           >
-            <List className="w-4 h-4" />
+            List
           </button>
           <button
             onClick={() => setViewMode('map')}
-            className={`p-2 rounded-lg flex items-center justify-center cursor-pointer ${
-              viewMode === 'map' ? 'bg-purple-600 text-white' : 'text-zinc-400'
+            className={`px-4 py-1.5 rounded-pill text-caption font-bold transition-all cursor-pointer ${
+              viewMode === 'map' ? 'bg-canvas text-ink shadow-sm' : 'text-muted hover:text-body'
             }`}
           >
-            <Map className="w-4 h-4" />
+            Map
           </button>
         </div>
       </div>
 
       {/* Main split dashboard view */}
-      <div className="flex-grow flex relative overflow-hidden">
+      <div className="flex-grow flex relative overflow-hidden h-full">
         {/* Left Side: Scrollable Issue Cards list */}
         <div
-          className={`w-full md:w-[450px] lg:w-[500px] border-r border-zinc-900 bg-zinc-950/40 p-4 md:p-6 overflow-y-auto flex-shrink-0 h-full ${
+          className={`w-full md:w-[460px] lg:w-[520px] border-r border-hairline bg-surface-soft/40 p-4 md:p-6 overflow-y-auto flex-shrink-0 h-full custom-scrollbar ${
             viewMode === 'map' ? 'hidden md:block' : 'block'
           }`}
         >
           {loading ? (
             <div className="space-y-4">
-              {[1, 2, 3].map((n) => (
+              {[1, 2].map((n) => (
                 <div
                   key={n}
-                  className="w-full h-48 rounded-3xl bg-zinc-900 border border-zinc-850 animate-pulse"
+                  className="w-full h-44 rounded-lg bg-canvas border border-hairline animate-pulse"
                 />
               ))}
             </div>
           ) : filteredReports.length === 0 ? (
-            <div className="text-center py-16 border border-dashed border-zinc-850 rounded-3xl">
-              <p className="text-zinc-500 text-sm">{t('catalog.noMatches')}</p>
+            <div className="text-center py-16 border border-dashed border-hairline rounded-lg bg-canvas">
+              <p className="text-muted text-body-sm">{t('catalog.noMatches')}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-6">

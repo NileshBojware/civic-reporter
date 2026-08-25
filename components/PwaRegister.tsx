@@ -1,11 +1,11 @@
 'use client'
 
 import { useEffect } from 'react'
+import { OfflineIndicator } from './OfflineIndicator'
 
 export function PwaRegister() {
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-      // Register the service worker
       navigator.serviceWorker
         .register('/sw.js')
         .then((registration) => {
@@ -17,5 +17,7 @@ export function PwaRegister() {
     }
   }, [])
 
-  return null
+  // OfflineIndicator is rendered here so it's globally available on every page
+  // without touching the layout tree. It returns null when online with no queue.
+  return <OfflineIndicator />
 }
