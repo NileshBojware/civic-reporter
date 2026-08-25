@@ -32,6 +32,7 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Statuses
     'status.pending': 'Pending',
+    'status.verified': 'Verified',
     'status.in_progress': 'In Progress',
     'status.resolved': 'Resolved',
     'status.rejected': 'Rejected',
@@ -219,6 +220,7 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Statuses
     'status.pending': 'लंबित',
+    'status.verified': 'सत्यापित',
     'status.in_progress': 'प्रगति पर',
     'status.resolved': 'सुलझाया गया',
     'status.rejected': 'अस्वीकृत',
@@ -406,6 +408,7 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Statuses
     'status.pending': 'प्रलंबित',
+    'status.verified': 'सत्यापित',
     'status.in_progress': 'प्रगतीपथावर',
     'status.resolved': 'सोडवले गेले',
     'status.rejected': 'फेटाळले',
@@ -593,6 +596,7 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Statuses
     'status.pending': 'মুলতুবি',
+    'status.verified': 'যাচাইকৃত',
     'status.in_progress': 'চলমান',
     'status.resolved': 'সমাধান হয়েছে',
     'status.rejected': 'প্রত্যাখ্যাত',
@@ -780,6 +784,7 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Statuses
     'status.pending': 'పెండింగ్',
+    'status.verified': 'ధృవీకరించబడింది',
     'status.in_progress': 'పురోగతిలో ఉంది',
     'status.resolved': 'పరిష్కరించబడింది',
     'status.rejected': 'తిరస్కరించబడింది',
@@ -967,6 +972,7 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Statuses
     'status.pending': 'நிலுவையில்',
+    'status.verified': 'சரிபார்க்கப்பட்டது',
     'status.in_progress': 'செயல்பாட்டில்',
     'status.resolved': 'தீர்க்கப்பட்டது',
     'status.rejected': 'நிராகரிக்கப்பட்டது',
@@ -1154,6 +1160,7 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Statuses
     'status.pending': 'પેન્ડિંગ',
+    'status.verified': 'ચકાસાયેલ',
     'status.in_progress': 'કામ ચાલુ છે',
     'status.resolved': 'ઉકેલાયેલ',
     'status.rejected': 'નકારાયેલ',
@@ -1341,6 +1348,7 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Statuses
     'status.pending': 'زیر التواء',
+    'status.verified': 'تصدیق شدہ',
     'status.in_progress': 'جاری ہے',
     'status.resolved': 'حل ہو گیا',
     'status.rejected': 'مسترد',

@@ -21,7 +21,7 @@ export interface Report {
   longitude: number
   address: string
   image_url: string
-  status: 'pending' | 'in_progress' | 'resolved' | 'rejected'
+  status: 'pending' | 'verified' | 'in_progress' | 'resolved' | 'rejected'
   rejection_reason?: string | null
   resolved_image_url?: string | null
   resolved_note?: string | null

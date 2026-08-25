@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { ArrowLeft, Shield, CheckCircle, XCircle, Play, AlertCircle, FileText, Image as ImageIcon, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, Shield, CheckCircle, XCircle, Play, AlertCircle, FileText, Image as ImageIcon, AlertTriangle, ShieldCheck } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import { StatusBadge } from '@/components/StatusBadge'
 import imageCompression from 'browser-image-compression'
@@ -14,8 +14,8 @@ import { useLanguage } from '@/lib/LanguageContext'
 const MapOverview = dynamic(() => import('@/components/MapOverview'), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-[250px] rounded-2xl bg-zinc-900 border border-zinc-800 animate-pulse flex items-center justify-center">
-      <span className="text-zinc-500 text-sm">Loading...</span>
+    <div className="w-full h-[250px] rounded-lg bg-surface-card border border-hairline animate-pulse flex items-center justify-center">
+      <span className="text-muted text-body-sm">Loading map...</span>
     </div>
   ),
 })
@@ -96,10 +96,8 @@ export default function AdminReportDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
-  // Geolocation Map sync
   const mockReportList = report ? [report] : []
 
-  // Client side image compression
   const handleResolutionPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (!files || files.length === 0) return
@@ -130,7 +128,6 @@ export default function AdminReportDetailPage() {
     }
   }
 
-  // Update Status directly (e.g. Start Fix)
   const handleStartFix = async () => {
     setError('')
     setSubmitting(true)
@@ -155,7 +152,30 @@ export default function AdminReportDetailPage() {
     }
   }
 
-  // Submit Resolution
+  const handleVerify = async () => {
+    setError('')
+    setSubmitting(true)
+
+    try {
+      const res = await fetch(`/api/reports/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'verified' }),
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to verify report')
+      }
+
+      alert('Report verified. Ready for work assignment.')
+      fetchReportDetails()
+    } catch (err: any) {
+      setError(err.message || 'Error occurred.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   const handleResolveSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!resolvedNote || !resolutionPhotoUrl) {
@@ -213,7 +233,6 @@ export default function AdminReportDetailPage() {
     }
   }
 
-  // Submit Rejection
   const handleRejectSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!rejectionReason) {
@@ -249,7 +268,6 @@ export default function AdminReportDetailPage() {
     }
   }
 
-  // Reset ticket back to review/inspect
   const handleResetTicket = async () => {
     if (!window.confirm('Reset this ticket back to Pending? This will delete resolution or rejection notes.')) return
     setError('')
@@ -273,24 +291,24 @@ export default function AdminReportDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex-grow flex items-center justify-center bg-zinc-950">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
+      <div className="flex-grow flex items-center justify-center bg-canvas">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     )
   }
 
   if (!user || profile?.role !== 'admin') {
     return (
-      <div className="flex-grow flex items-center justify-center px-4 py-16">
-        <div className="w-full max-w-md p-8 rounded-3xl glass-panel text-center">
-          <AlertTriangle className="w-12 h-12 text-rose-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-zinc-100 mb-2">Access Denied</h2>
-          <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
+      <div className="flex-grow flex items-center justify-center px-4 py-16 bg-canvas">
+        <div className="w-full max-w-md p-8 rounded-lg border border-hairline bg-canvas text-center shadow-md">
+          <AlertTriangle className="w-12 h-12 text-status-rejected mx-auto mb-4" />
+          <h2 className="text-title-lg font-bold text-ink mb-2">Access Denied</h2>
+          <p className="text-body text-body-sm mb-6 leading-relaxed">
             Admin authorization required.
           </p>
           <Link
             href="/login"
-            className="w-full py-3 px-4 bg-purple-600 text-white rounded-xl"
+            className="btn-primary w-full flex items-center justify-center"
           >
             Log In
           </Link>
@@ -301,66 +319,85 @@ export default function AdminReportDetailPage() {
 
   if (!report) return null
 
+  // Category dynamic style helper
+  const getCategoryStyles = (category: string) => {
+    switch (category) {
+      case 'garbage':
+        return 'text-category-waste bg-category-waste/10 border-category-waste/20'
+      case 'water_leakage':
+        return 'text-category-water bg-category-water/10 border-category-water/20'
+      case 'drainage':
+        return 'text-category-drainage bg-category-drainage/10 border-category-drainage/20'
+      case 'road_damage':
+        return 'text-category-waste bg-category-waste/10 border-category-waste/20'
+      case 'streetlight':
+        return 'text-category-water bg-category-water/10 border-category-water/20'
+      default:
+        return 'text-muted bg-surface-card border-hairline'
+    }
+  }
+
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-10 md:py-16">
+    <div className="container mx-auto max-w-4xl px-4 py-10 md:py-16 bg-canvas text-body">
+      {/* Back to dashboard */}
       <Link
         href="/admin"
-        className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 mb-6 transition cursor-pointer"
+        className="inline-flex items-center gap-1.5 text-caption font-semibold text-muted hover:text-ink mb-6 transition cursor-pointer"
       >
         <ArrowLeft className="w-4 h-4" />
-        {t('adminDetail.btnBackDash')}
+        <span>{t('adminDetail.btnBackDash')}</span>
       </Link>
 
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-extrabold text-zinc-100">{t('adminDetail.title')}</h1>
-          <p className="text-zinc-500 text-xs mt-0.5">ID: {report.id}</p>
+          <h1 className="text-display-sm text-ink mb-0.5">{t('adminDetail.title')}</h1>
+          <p className="text-[10px] text-muted font-mono">ID: {report.id}</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Shield className="w-4.5 h-4.5 text-purple-400" />
-          <span className="text-xs font-bold text-zinc-400">{t('nav.adminDashboard')}</span>
+        <div className="flex items-center gap-2 text-caption text-muted font-bold bg-surface-soft border border-hairline px-3 py-1.5 rounded-md">
+          <Shield className="w-4 h-4 text-brand-accent" />
+          <span>{t('nav.adminDashboard')}</span>
         </div>
       </div>
 
       {error && (
-        <div className="mb-6 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold leading-relaxed">
+        <div className="mb-6 p-4 rounded-md bg-status-rejected/10 border border-status-rejected/20 text-status-rejected text-body-sm font-semibold leading-relaxed">
           {error}
         </div>
       )}
 
       {/* Main Grid split */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left: Info Card */}
+        {/* Left: Info Card & Action Dash */}
         <div className="lg:col-span-7 space-y-6">
-          <div className="p-6 md:p-8 rounded-3xl glass-panel space-y-6">
+          <div className="p-6 md:p-8 rounded-lg bg-canvas border border-hairline shadow-sm space-y-6">
             <div className="flex justify-between items-center gap-4">
-              <span className="text-xs font-bold text-zinc-400 bg-zinc-900 border border-zinc-850 px-2.5 py-1 rounded-full uppercase">
+              <span className={`inline-flex items-center px-3 py-1 rounded-pill text-caption font-semibold border ${getCategoryStyles(report.category)}`}>
                 {t('category.' + report.category)}
               </span>
               <StatusBadge status={report.status} />
             </div>
 
             <div>
-              <h2 className="text-lg font-bold text-zinc-100 mb-2">{report.title}</h2>
-              <p className="text-zinc-400 text-sm leading-relaxed">{report.description || 'No description.'}</p>
+              <h2 className="text-title-lg font-bold text-ink mb-2">{report.title}</h2>
+              <p className="text-body-md text-body leading-relaxed">{report.description || 'No description.'}</p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-zinc-950 border border-zinc-900 flex gap-3">
+            <div className="p-4 rounded-lg bg-canvas border border-hairline flex gap-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={report.image_url}
                 alt="Ticket Original Evidence"
-                className="w-24 h-24 object-cover rounded-xl border border-zinc-900 shrink-0"
+                className="w-24 h-24 object-cover rounded-md border border-hairline shrink-0"
               />
-              <div className="flex flex-col justify-between py-1">
-                <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wide">Evidence</span>
-                <span className="text-xs text-zinc-300 font-medium line-clamp-2 leading-normal">
+              <div className="flex flex-col justify-between py-1 min-w-0">
+                <span className="text-[10px] font-bold text-muted uppercase tracking-wide">Evidence</span>
+                <span className="text-caption text-body font-medium line-clamp-2 leading-normal">
                   {t('card.reportedOn')}: {new Date(report.created_at).toLocaleString(language === 'en' ? 'en-US' : language)}
                 </span>
                 <a
                   href={report.image_url}
                   target="_blank"
-                  className="text-[10px] font-bold text-purple-400 hover:text-purple-300 inline-block mt-2"
+                  className="text-[10px] font-bold text-brand-accent hover:underline inline-block mt-2"
                 >
                   View Full Image &rarr;
                 </a>
@@ -369,22 +406,22 @@ export default function AdminReportDetailPage() {
           </div>
 
           {/* Action Dashboard Panel */}
-          <div className="p-6 md:p-8 rounded-3xl glass-panel space-y-6">
-            <h3 className="text-sm font-bold text-zinc-100 border-b border-zinc-800 pb-3 flex items-center gap-1.5">
-              <FileText className="w-4.5 h-4.5 text-purple-400" />
-              {t('adminDetail.updateStatus')}
+          <div className="p-6 md:p-8 rounded-lg bg-canvas border border-hairline shadow-sm space-y-6">
+            <h3 className="text-title-sm font-bold text-ink border-b border-hairline-soft pb-3 flex items-center gap-1.5">
+              <FileText className="w-4.5 h-4.5 text-brand-accent" />
+              <span>Update Ticket Status</span>
             </h3>
 
             {/* If resolved or rejected, let them reset */}
             {(report.status === 'resolved' || report.status === 'rejected') ? (
               <div className="space-y-4">
-                <div className="p-4 rounded-xl bg-zinc-900/60 border border-zinc-850 text-xs text-zinc-400">
-                  This ticket has been finalized as <span className="font-bold uppercase text-zinc-100">{report.status}</span>. To make edits, reset its status.
+                <div className="p-4 rounded-md bg-surface-soft border border-hairline text-caption text-body">
+                  This ticket has been finalized as <span className="font-bold uppercase text-ink">{report.status}</span>. To make edits, reset its status.
                 </div>
                 <button
                   onClick={handleResetTicket}
                   disabled={submitting}
-                  className="px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-750 text-zinc-300 hover:text-white border border-zinc-750 text-xs font-bold transition disabled:opacity-50 cursor-pointer"
+                  className="btn-secondary text-caption py-1.5 h-9"
                 >
                   Reset Status to Pending
                 </button>
@@ -394,63 +431,76 @@ export default function AdminReportDetailPage() {
                 {/* Status-dependent buttons */}
                 <div className="flex flex-wrap gap-3">
                   {report.status === 'pending' && (
+                    <>
+                      <button
+                        onClick={handleVerify}
+                        disabled={submitting}
+                        className="btn-primary h-10 px-5 text-caption flex items-center gap-1.5"
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        <span>Verify Report</span>
+                      </button>
+                    </>
+                  )}
+
+                  {report.status === 'verified' && (
                     <button
                       onClick={handleStartFix}
                       disabled={submitting}
-                      className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-blue-600/10 transition disabled:opacity-50 cursor-pointer"
+                      className="btn-primary h-10 px-5 text-caption flex items-center gap-1.5"
                     >
-                      <Play className="w-4 h-4 fill-white text-white" />
-                      <span>Start Work / Verify</span>
+                      <Play className="w-3.5 h-3.5 fill-white text-white" />
+                      <span>Start Work</span>
                     </button>
                   )}
 
                   {report.status === 'in_progress' && (
                     <button
                       onClick={() => setActionTab('resolve')}
-                      className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
+                      className={`h-10 px-5 text-caption rounded-md font-bold flex items-center gap-1.5 transition cursor-pointer ${
                         actionTab === 'resolve'
-                          ? 'bg-emerald-500/10 text-emerald-450 border border-emerald-500/30'
-                          : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md'
+                          ? 'bg-primary text-on-primary'
+                          : 'btn-primary'
                       }`}
                     >
-                      <CheckCircle className="w-4 h-4" />
+                      <CheckCircle className="w-3.5 h-3.5" />
                       <span>Resolve Ticket</span>
                     </button>
                   )}
 
                   <button
                     onClick={() => setActionTab('reject')}
-                    className={`px-5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition cursor-pointer ${
+                    className={`h-10 px-5 text-caption rounded-md font-bold flex items-center gap-1.5 border transition cursor-pointer ${
                       actionTab === 'reject'
-                        ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
-                        : 'bg-zinc-850 hover:bg-zinc-800 text-zinc-350 hover:text-zinc-200 border border-zinc-800'
+                        ? 'bg-status-rejected/10 text-status-rejected border-status-rejected/25'
+                        : 'btn-secondary text-status-rejected border-status-rejected/20 hover:bg-status-rejected/5'
                     }`}
                   >
-                    <XCircle className="w-4 h-4" />
+                    <XCircle className="w-3.5 h-3.5" />
                     <span>Reject Ticket</span>
                   </button>
                 </div>
 
                 {/* Form Resolve */}
                 {actionTab === 'resolve' && (
-                  <form onSubmit={handleResolveSubmit} className="space-y-5 p-5 bg-zinc-950/40 rounded-2xl border border-zinc-900 animate-in slide-in-from-top-4 duration-200">
-                    <h4 className="text-xs font-bold text-zinc-350 uppercase">Mark Issue Resolved</h4>
+                  <form onSubmit={handleResolveSubmit} className="space-y-5 p-5 bg-surface-soft/40 rounded-lg border border-hairline animate-in slide-in-from-top-4 duration-200">
+                    <h4 className="text-caption font-bold text-ink uppercase">Mark Issue Resolved</h4>
                     
                     <div>
-                      <label className="text-[10px] font-bold text-zinc-400 block mb-1.5">Resolution Notes *</label>
+                      <label className="text-[10px] font-bold text-muted block mb-1.5">Resolution Notes *</label>
                       <textarea
                         required
                         value={resolvedNote}
                         onChange={(e) => setResolvedNote(e.target.value)}
                         rows={3}
                         placeholder="Detail what was fixed (e.g. Road crew patched pothole with cold asphalt mix)..."
-                        className="w-full px-3.5 py-2 rounded-xl bg-zinc-900 border border-zinc-850 text-xs text-zinc-100 placeholder-zinc-650 focus:outline-none focus:border-purple-500 transition resize-none"
+                        className="w-full px-3.5 py-2 rounded-md bg-canvas border border-hairline text-caption text-ink placeholder-muted focus:outline-none focus:border-primary transition resize-none"
                       />
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-bold text-zinc-400 block mb-1.5">Resolution Photo Evidence *</label>
-                      <div className="flex flex-col items-center justify-center border-2 border-dashed border-zinc-850 hover:border-purple-500/20 rounded-xl p-4 transition cursor-pointer relative bg-zinc-900/10 min-h-[140px]">
+                      <label className="text-[10px] font-bold text-muted block mb-1.5">Resolution Photo Evidence *</label>
+                      <div className="flex flex-col items-center justify-center border-2 border-dashed border-hairline hover:border-muted rounded-md p-4 transition bg-canvas relative min-h-[140px]">
                         <input
                           type="file"
                           accept="image/*"
@@ -464,22 +514,22 @@ export default function AdminReportDetailPage() {
                             <img
                               src={resolutionPhotoUrl}
                               alt="Resolution evidence preview"
-                              className="max-h-36 rounded-lg mx-auto border border-zinc-850 mb-2 object-contain"
+                              className="max-h-36 rounded-md mx-auto border border-hairline mb-2 object-contain"
                             />
-                            <span className="text-[9px] text-zinc-500 block">
-                              Compressed resolution photo ready.
+                            <span className="text-[9px] text-muted block font-semibold">
+                              Resolution photo uploaded.
                             </span>
                           </div>
                         ) : (
                           <div className="text-center z-20">
-                            <ImageIcon className="w-8 h-8 text-zinc-500 mx-auto mb-2" />
-                            <span className="text-xs font-semibold text-zinc-300 block">Upload Completion Photo</span>
-                            <span className="text-[9px] text-zinc-500">Compacted for free storage limits</span>
+                            <ImageIcon className="w-8 h-8 text-muted mx-auto mb-2" />
+                            <span className="text-caption font-semibold text-ink block">Upload Completion Photo</span>
+                            <span className="text-[9px] text-muted">Compacted for database storage limits</span>
                           </div>
                         )}
                       </div>
                       {compressing && (
-                        <span className="text-[10px] text-purple-400 font-bold block mt-1.5 text-center animate-pulse">
+                        <span className="text-[10px] text-brand-accent font-bold block mt-1.5 text-center animate-pulse">
                           Compressing resolution file...
                         </span>
                       )}
@@ -488,7 +538,7 @@ export default function AdminReportDetailPage() {
                     <button
                       type="submit"
                       disabled={submitting || compressing}
-                      className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition disabled:opacity-50 cursor-pointer"
+                      className="btn-primary w-full h-10 text-caption"
                     >
                       {submitting ? 'Updating status...' : 'Submit Work Completion'}
                     </button>
@@ -497,25 +547,25 @@ export default function AdminReportDetailPage() {
 
                 {/* Form Reject */}
                 {actionTab === 'reject' && (
-                  <form onSubmit={handleRejectSubmit} className="space-y-4 p-5 bg-zinc-950/40 rounded-2xl border border-zinc-900 animate-in slide-in-from-top-4 duration-200">
-                    <h4 className="text-xs font-bold text-zinc-350 uppercase">Reject Ticket</h4>
+                  <form onSubmit={handleRejectSubmit} className="space-y-4 p-5 bg-surface-soft/40 rounded-lg border border-hairline animate-in slide-in-from-top-4 duration-200">
+                    <h4 className="text-caption font-bold text-ink uppercase">Reject Ticket</h4>
 
                     <div>
-                      <label className="text-[10px] font-bold text-zinc-400 block mb-1.5">Mandatory Rejection Reason *</label>
+                      <label className="text-[10px] font-bold text-muted block mb-1.5">Mandatory Rejection Reason *</label>
                       <textarea
                         required
                         value={rejectionReason}
                         onChange={(e) => setRejectionReason(e.target.value)}
                         rows={3}
                         placeholder="Provide details on why this ticket is rejected (e.g. Duplicate ticket, Not public property, Unable to locate)..."
-                        className="w-full px-3.5 py-2 rounded-xl bg-zinc-900 border border-zinc-850 text-xs text-zinc-100 placeholder-zinc-650 focus:outline-none focus:border-purple-500 transition resize-none"
+                        className="w-full px-3.5 py-2 rounded-md bg-canvas border border-hairline text-caption text-ink placeholder-muted focus:outline-none focus:border-primary transition resize-none"
                       />
                     </div>
 
                     <button
                       type="submit"
                       disabled={submitting}
-                      className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition disabled:opacity-50 cursor-pointer"
+                      className="btn-primary w-full h-10 text-caption bg-status-rejected hover:bg-status-rejected/90"
                     >
                       {submitting ? 'Updating status...' : 'Reject Ticket'}
                     </button>
@@ -528,21 +578,21 @@ export default function AdminReportDetailPage() {
 
         {/* Right: Map Pin Card */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="p-5 rounded-3xl glass-panel space-y-4">
-            <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider">{t('detail.coordinates')}</h3>
-            <div className="h-[200px]">
+          <div className="p-5 rounded-lg bg-canvas border border-hairline shadow-sm space-y-4">
+            <h3 className="text-caption font-bold text-ink uppercase tracking-wider">{t('detail.coordinates')}</h3>
+            <div className="h-[200px] rounded-lg overflow-hidden border border-hairline">
               <MapOverview reports={mockReportList} zoom={15} />
             </div>
-            <div className="text-[10px] text-zinc-500 font-mono space-y-1 mt-2">
+            <div className="text-[10px] text-muted font-mono space-y-2 mt-2">
               <div className="flex items-start gap-1.5">
-                <span className="font-bold text-zinc-400 shrink-0">{t('detail.address')}:</span>
-                <span>{report.address}</span>
+                <span className="font-bold text-ink shrink-0">{t('detail.address')}:</span>
+                <span className="leading-relaxed">{report.address}</span>
               </div>
-              <div className="flex items-center gap-1.5 mt-2">
-                <span className="font-bold text-zinc-400">Lat:</span>
+              <div className="flex items-center gap-1.5 border-t border-hairline-soft pt-2">
+                <span className="font-bold text-ink">Lat:</span>
                 <span>{report.latitude.toFixed(6)}</span>
-                <span className="text-zinc-700">|</span>
-                <span className="font-bold text-zinc-400">Lng:</span>
+                <span className="text-hairline">|</span>
+                <span className="font-bold text-ink">Lng:</span>
                 <span>{report.longitude.toFixed(6)}</span>
               </div>
             </div>

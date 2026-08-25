@@ -21,7 +21,7 @@ interface MapPickerProps {
   onChange: (lat: number, lng: number) => void
 }
 
-// Handler to sync map center when the user clicks elsewhere on the map to place the pin
+// Handle map click to place the pin at the clicked location
 function MapClickHandler({ onClick }: { onClick: (lat: number, lng: number) => void }) {
   useMapEvents({
     click(e) {
@@ -31,7 +31,7 @@ function MapClickHandler({ onClick }: { onClick: (lat: number, lng: number) => v
   return null
 }
 
-// Component to dynamically pan the map when external variables change
+// Sync map view when coordinates change externally (e.g. geolocation or EXIF GPS applied)
 function MapViewSync({ center }: { center: [number, number] }) {
   const map = useMapEvents({})
   useEffect(() => {
@@ -42,25 +42,10 @@ function MapViewSync({ center }: { center: [number, number] }) {
 
 export default function MapPicker({ lat, lng, onChange }: MapPickerProps) {
   const [mounted, setMounted] = useState(false)
-  const [mapTheme, setMapTheme] = useState<'dark' | 'light'>('dark')
   const markerRef = useRef<any>(null)
 
   useEffect(() => {
     setMounted(true)
-    const isDark = document.documentElement.classList.contains('dark')
-    setMapTheme(isDark ? 'dark' : 'light')
-
-    const observer = new MutationObserver(() => {
-      const isDarkNow = document.documentElement.classList.contains('dark')
-      setMapTheme(isDarkNow ? 'dark' : 'light')
-    })
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['class'],
-    })
-
-    return () => observer.disconnect()
   }, [])
 
   const position: [number, number] = useMemo(() => [lat, lng], [lat, lng])
@@ -80,27 +65,24 @@ export default function MapPicker({ lat, lng, onChange }: MapPickerProps) {
 
   if (!mounted) {
     return (
-      <div className="w-full h-[300px] rounded-2xl bg-zinc-900 border border-zinc-800 animate-pulse flex items-center justify-center">
-        <span className="text-zinc-500 text-sm">Loading Map Picker...</span>
+      <div className="w-full h-[300px] rounded-lg bg-surface-card border border-hairline animate-pulse flex items-center justify-center">
+        <span className="text-muted text-body-sm font-semibold">Loading Map Picker...</span>
       </div>
     )
   }
 
   return (
-    <div className="relative w-full h-[300px] rounded-2xl overflow-hidden border border-zinc-800 shadow-inner">
+    <div className="relative w-full h-[300px] rounded-lg overflow-hidden border border-hairline">
       <MapContainer
         center={position}
         zoom={15}
         scrollWheelZoom={false}
         className="w-full h-full z-0"
       >
+        {/* Light canvas tile layer matching design system */}
         <TileLayer
           attribution='&copy; <a href="https://carto.com/attributions">CARTO</a> contributors'
-          url={
-            mapTheme === 'dark'
-              ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-              : 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png'
-          }
+          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
         />
         <DraggableMarker
           position={position}
@@ -110,7 +92,9 @@ export default function MapPicker({ lat, lng, onChange }: MapPickerProps) {
         <MapClickHandler onClick={onChange} />
         <MapViewSync center={position} />
       </MapContainer>
-      <div className="absolute bottom-2 left-2 z-10 bg-zinc-950/80 backdrop-blur-md px-2.5 py-1 rounded text-[10px] text-zinc-400 border border-zinc-800 pointer-events-none">
+
+      {/* Floating instruction label using design-system tokens */}
+      <div className="absolute bottom-2 left-2 z-10 bg-canvas/90 backdrop-blur-sm px-2.5 py-1 rounded-md text-caption text-muted border border-hairline pointer-events-none shadow-sm">
         Drag pin or click map to adjust location
       </div>
     </div>

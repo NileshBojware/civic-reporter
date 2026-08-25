@@ -14,8 +14,8 @@ import { useLanguage } from '@/lib/LanguageContext'
 const MapOverview = dynamic(() => import('@/components/MapOverview'), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-[250px] rounded-2xl bg-zinc-900 border border-zinc-800 animate-pulse flex items-center justify-center">
-      <span className="text-zinc-500 text-sm">Loading...</span>
+    <div className="w-full h-[250px] rounded-lg bg-surface-card border border-hairline animate-pulse flex items-center justify-center">
+      <span className="text-muted text-body-sm">Loading map...</span>
     </div>
   ),
 })
@@ -88,7 +88,6 @@ export default function ReportDetailPage() {
     }
   }
 
-  // Author confirms issue is fixed
   const handleCitizenConfirmation = async (confirmed: boolean) => {
     setActionLoading(true)
     try {
@@ -113,6 +112,7 @@ export default function ReportDetailPage() {
             particleCount: 100,
             spread: 70,
             origin: { y: 0.6 },
+            colors: ['#10b981', '#2563eb', '#111111']
           })
           alert('Thank you for confirming!')
         } else {
@@ -129,79 +129,101 @@ export default function ReportDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex-grow flex items-center justify-center bg-zinc-950">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
+      <div className="flex-grow flex items-center justify-center bg-canvas">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     )
   }
 
   if (!report) return null
 
-  // Timeline Steps Helpers
-  const timelineSteps = [
-    { label: t('status.pending'), key: 'pending', done: true },
-    { label: t('status.in_progress'), key: 'in_progress', done: report.status !== 'pending' && report.status !== 'rejected' },
-    { label: t('status.resolved'), key: 'resolved', done: report.status === 'resolved' },
-  ]
-
   const isAuthor = user && report.user_id === user.id
 
+  // Category dynamic styles helper
+  const getCategoryStyles = (category: string) => {
+    switch (category) {
+      case 'garbage':
+        return 'text-category-waste bg-category-waste/10 border-category-waste/20'
+      case 'water_leakage':
+        return 'text-category-water bg-category-water/10 border-category-water/20'
+      case 'drainage':
+        return 'text-category-drainage bg-category-drainage/10 border-category-drainage/20'
+      case 'road_damage':
+        return 'text-category-waste bg-category-waste/10 border-category-waste/20'
+      case 'streetlight':
+        return 'text-category-water bg-category-water/10 border-category-water/20'
+      default:
+        return 'text-muted bg-surface-card border-hairline'
+    }
+  }
+
+  // Get status color representation for timeline
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-status-reported'
+      case 'in_progress': return 'bg-status-inprogress'
+      case 'resolved': return 'bg-status-resolved'
+      case 'rejected': return 'bg-status-rejected'
+      default: return 'bg-muted-soft'
+    }
+  }
+
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-10 md:py-16">
+    <div className="container mx-auto max-w-4xl px-4 py-10 md:py-16 bg-canvas text-body">
+      {/* Back button link */}
       <Link
         href="/reports"
-        className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 mb-6 transition cursor-pointer"
+        className="inline-flex items-center gap-1.5 text-caption font-semibold text-muted hover:text-ink mb-6 transition cursor-pointer"
       >
         <ArrowLeft className="w-4 h-4" />
-        {t('detail.btnBackCatalog')}
+        <span>{t('detail.btnBackCatalog')}</span>
       </Link>
 
       {/* Main Container Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Side: Photo Comparisons and Description */}
         <div className="lg:col-span-8 space-y-6">
-          <div className="p-6 md:p-8 rounded-3xl glass-panel relative overflow-hidden">
-            <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-purple-500/20 to-transparent" />
+          <div className="p-6 md:p-8 rounded-lg bg-canvas border border-hairline shadow-sm relative overflow-hidden">
             
             {/* Header info */}
             <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-              <span className="text-xs font-bold text-purple-400 bg-purple-500/10 px-3 py-1 rounded-full border border-purple-500/20">
+              <span className={`inline-flex items-center px-3 py-1 rounded-pill text-caption font-semibold border ${getCategoryStyles(report.category)}`}>
                 {t('category.' + report.category)}
               </span>
               <StatusBadge status={report.status} />
             </div>
 
-            <h1 className="text-xl md:text-2xl font-extrabold text-zinc-100 leading-snug mb-4">
+            <h1 className="text-title-lg font-bold text-ink leading-snug mb-4">
               {report.title}
             </h1>
 
-            <div className="flex flex-wrap items-center gap-4 text-xs text-zinc-400 border-b border-zinc-900 pb-4 mb-6">
+            <div className="flex flex-wrap items-center gap-4 text-caption text-muted border-b border-hairline-soft pb-4 mb-6">
               <div className="flex items-center gap-1.5">
-                <Calendar className="w-4 h-4 text-zinc-500" />
+                <Calendar className="w-4 h-4 text-muted" />
                 <span>{t('card.reportedOn')}: {new Date(report.created_at).toLocaleString(language === 'en' ? 'en-US' : language)}</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-purple-400" />
-                <span className="truncate max-w-[200px]">{report.address}</span>
+                <MapPin className="w-4 h-4 text-brand-accent" />
+                <span className="truncate max-w-[220px]">{report.address}</span>
               </div>
             </div>
 
-            <h3 className="text-xs font-bold text-zinc-300 uppercase mb-2">{t('form.fieldDesc')}</h3>
-            <p className="text-zinc-400 text-sm leading-relaxed mb-6">
+            <h3 className="text-caption font-bold text-ink uppercase mb-2">Description</h3>
+            <p className="text-body-md text-body leading-relaxed mb-6">
               {report.description || 'No description provided.'}
             </p>
 
-            {/* Evidence Comparison Slider or Grid */}
+            {/* Evidence Comparison Grid */}
             <div className="space-y-4">
-              <h3 className="text-xs font-bold text-zinc-300 uppercase">Evidence Log</h3>
+              <h3 className="text-caption font-bold text-ink uppercase mb-3">Evidence Log</h3>
               
               {report.status === 'resolved' && report.resolved_image_url ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Before Evidence */}
-                  <div className="rounded-2xl border border-zinc-850 overflow-hidden bg-zinc-950">
-                    <div className="px-4 py-2 border-b border-zinc-850 bg-zinc-900/50 flex justify-between items-center">
-                      <span className="text-[10px] font-bold text-amber-500 uppercase">Before</span>
-                      <span className="text-[9px] text-zinc-500">Report Photo</span>
+                  <div className="rounded-lg border border-hairline overflow-hidden bg-surface-card">
+                    <div className="px-4 py-2 border-b border-hairline-soft bg-surface-soft flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-status-reported uppercase">Before</span>
+                      <span className="text-[9px] text-muted">Report Photo</span>
                     </div>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -212,10 +234,10 @@ export default function ReportDetailPage() {
                   </div>
                   
                   {/* After Evidence */}
-                  <div className="rounded-2xl border border-emerald-500/20 overflow-hidden bg-zinc-950">
-                    <div className="px-4 py-2 border-b border-emerald-500/10 bg-emerald-500/5 flex justify-between items-center">
-                      <span className="text-[10px] font-bold text-emerald-450 uppercase">After (Resolved)</span>
-                      <span className="text-[9px] text-emerald-500">Fix Evidence</span>
+                  <div className="rounded-lg border border-status-resolved/20 overflow-hidden bg-surface-card">
+                    <div className="px-4 py-2 border-b border-status-resolved/10 bg-status-resolved/5 flex justify-between items-center">
+                      <span className="text-[10px] font-bold text-status-resolved uppercase">After (Resolved)</span>
+                      <span className="text-[9px] text-status-resolved">Fix Evidence</span>
                     </div>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
@@ -226,9 +248,9 @@ export default function ReportDetailPage() {
                   </div>
                 </div>
               ) : (
-                <div className="rounded-2xl border border-zinc-850 overflow-hidden bg-zinc-950">
-                  <div className="px-4 py-2 border-b border-zinc-850 bg-zinc-900/50 flex justify-between items-center">
-                    <span className="text-[10px] font-bold text-purple-400 uppercase">Evidence Image</span>
+                <div className="rounded-lg border border-hairline overflow-hidden bg-surface-card">
+                  <div className="px-4 py-2 border-b border-hairline-soft bg-surface-soft flex justify-between items-center">
+                    <span className="text-[10px] font-bold text-primary uppercase">Evidence Photo</span>
                   </div>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -240,36 +262,36 @@ export default function ReportDetailPage() {
               )}
             </div>
 
-            {/* Resolution Details */}
+            {/* Resolution Details Banner */}
             {report.status === 'resolved' && (
-              <div className="mt-8 p-5 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-2.5">
-                <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+              <div className="mt-8 p-5 rounded-lg bg-status-resolved/5 border border-status-resolved/20 space-y-3">
+                <h4 className="text-body-sm font-bold text-status-resolved uppercase tracking-wider flex items-center gap-1.5">
                   <CheckCircle className="w-4 h-4" />
                   Resolution Work Report
                 </h4>
-                <p className="text-xs text-zinc-400 leading-relaxed font-mono">
+                <p className="text-body-sm text-body leading-relaxed font-mono bg-canvas p-3 border border-hairline rounded-md">
                   {report.resolved_note || 'The issue has been completed.'}
                 </p>
                 
                 {/* Citizen Checkback Loop */}
                 {isAuthor && (
-                  <div className="pt-4 border-t border-zinc-800/40 mt-4">
-                    <p className="text-xs font-bold text-zinc-300 mb-3 flex items-center gap-1.5">
-                      <HelpCircle className="w-4 h-4 text-purple-400" />
+                  <div className="pt-4 border-t border-hairline-soft mt-4">
+                    <p className="text-caption font-bold text-ink mb-3 flex items-center gap-1.5">
+                      <HelpCircle className="w-4 h-4 text-brand-accent" />
                       Did municipal crews fix this correctly?
                     </p>
                     <div className="flex gap-2.5">
                       <button
                         onClick={() => handleCitizenConfirmation(true)}
                         disabled={actionLoading}
-                        className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] font-bold transition disabled:opacity-50 cursor-pointer"
+                        className="btn-primary h-9 py-1 px-4 text-caption"
                       >
                         Yes, Confirm Fixed
                       </button>
                       <button
                         onClick={() => handleCitizenConfirmation(false)}
                         disabled={actionLoading}
-                        className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-750 text-zinc-300 border border-zinc-750 text-[11px] font-bold transition disabled:opacity-50 cursor-pointer"
+                        className="btn-secondary h-9 py-1 px-4 text-caption"
                       >
                         No, Still Broken
                       </button>
@@ -279,14 +301,14 @@ export default function ReportDetailPage() {
               </div>
             )}
 
-            {/* Rejection Details */}
+            {/* Rejection Details Banner */}
             {report.status === 'rejected' && (
-              <div className="mt-8 p-5 rounded-2xl bg-rose-500/5 border border-rose-500/20 space-y-2.5">
-                <h4 className="text-xs font-bold text-rose-450 uppercase tracking-wider flex items-center gap-1.5">
+              <div className="mt-8 p-5 rounded-lg bg-status-rejected/5 border border-status-rejected/20 space-y-3">
+                <h4 className="text-body-sm font-bold text-status-rejected uppercase tracking-wider flex items-center gap-1.5">
                   <XCircle className="w-4 h-4" />
                   Inspection Rejection
                 </h4>
-                <p className="text-xs text-zinc-400 leading-relaxed font-mono">
+                <p className="text-body-sm text-body leading-relaxed font-mono bg-canvas p-3 border border-hairline rounded-md">
                   Reason: {report.rejection_reason || 'Could not verify issue.'}
                 </p>
               </div>
@@ -296,73 +318,104 @@ export default function ReportDetailPage() {
 
         {/* Right Side: Map location & Upvotes panel */}
         <div className="lg:col-span-4 space-y-6">
-          {/* Exact Coordinates Map Pin */}
-          <div className="p-5 rounded-3xl glass-panel space-y-4">
-            <h3 className="text-xs font-bold text-zinc-300 uppercase tracking-wider">{t('detail.coordinates')}</h3>
-            <div className="h-[200px]">
+          {/* Coordinates Map Pin */}
+          <div className="p-5 rounded-lg bg-canvas border border-hairline shadow-sm space-y-4">
+            <h3 className="text-caption font-bold text-ink uppercase tracking-wider">Location Pin</h3>
+            <div className="h-[200px] rounded-lg overflow-hidden border border-hairline">
               <MapOverview reports={[report]} zoom={15} />
             </div>
-            <p className="text-[10px] text-zinc-500 leading-normal font-mono text-center">
+            <p className="text-[10px] text-muted leading-normal font-mono text-center">
               Lat: {report.latitude.toFixed(6)}, Lng: {report.longitude.toFixed(6)}
             </p>
           </div>
 
-          {/* Upvotes Card */}
-          <div className="p-5 rounded-3xl glass-panel space-y-4 text-center">
-            <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Community Priority</h3>
-            <div className="text-3xl font-extrabold text-zinc-100">{report.upvote_count}</div>
-            <span className="text-[10px] text-zinc-500 block">{t('card.upvotes')}</span>
+          {/* Upvotes priority Card */}
+          <div className="p-5 rounded-lg bg-canvas border border-hairline shadow-sm space-y-4 text-center">
+            <h3 className="text-caption font-bold text-muted uppercase tracking-wider">Community Priority</h3>
+            <div className="text-display-sm text-ink block font-bold">{report.upvote_count}</div>
+            <span className="text-[10px] text-muted block -mt-2">{t('card.upvotes')}</span>
             
             <button
               onClick={handleUpvote}
-              className={`w-full py-3 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 border transition cursor-pointer ${
+              className={`w-full py-2.5 h-10 rounded-md text-caption font-bold flex items-center justify-center gap-2 border transition duration-150 cursor-pointer ${
                 upvoted
-                  ? 'bg-purple-500/10 text-purple-300 border-purple-500/30'
-                  : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200'
+                  ? 'bg-brand-accent/10 text-brand-accent border-brand-accent/20 hover:bg-brand-accent/15'
+                  : 'btn-secondary'
               }`}
             >
-              <ThumbsUp className={`w-3.5 h-3.5 ${upvoted ? 'fill-purple-400 text-purple-400' : ''}`} />
+              <ThumbsUp className={`w-3.5 h-3.5 ${upvoted ? 'fill-brand-accent text-brand-accent' : ''}`} />
               <span>{upvoted ? 'Upvoted!' : 'Upvote This Issue'}</span>
             </button>
           </div>
 
           {/* Status Timeline */}
-          <div className="p-5 rounded-3xl glass-panel space-y-5">
-            <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Status Timeline</h3>
-            <div className="space-y-4 relative pl-4 border-l border-zinc-800">
+          <div className="p-5 rounded-lg bg-canvas border border-hairline shadow-sm space-y-5">
+            <h3 className="text-caption font-bold text-muted uppercase tracking-wider">Status Timeline</h3>
+            <div className="space-y-4 relative pl-4 border-l border-hairline">
               {report.status === 'rejected' ? (
                 <>
                   <div className="relative">
-                    <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-zinc-800" />
-                    <div className="text-xs text-zinc-500 font-semibold">Submitted Ticket</div>
+                    <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-status-reported border border-canvas" />
+                    <div className="text-caption text-ink font-semibold">Reported Issue</div>
                   </div>
                   <div className="relative">
-                    <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-rose-500 border border-zinc-950" />
-                    <div className="text-xs text-rose-500 font-bold flex items-center gap-1">
+                    <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-status-rejected border border-canvas animate-pulse" />
+                    <div className="text-caption text-status-rejected font-bold flex items-center gap-1">
                       <AlertCircle className="w-3.5 h-3.5" />
                       Rejected
                     </div>
                   </div>
                 </>
               ) : (
-                timelineSteps.map((step, idx) => (
-                  <div key={idx} className="relative">
-                    <div
-                      className={`absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full border transition ${
-                        step.done
-                          ? 'bg-purple-500 border-purple-500'
-                          : 'bg-zinc-950 border-zinc-850'
-                      }`}
-                    />
-                    <div
-                      className={`text-xs font-semibold ${
-                        step.done ? 'text-zinc-200' : 'text-zinc-500'
-                      }`}
-                    >
-                      {step.label}
+                <>
+                  {/* Step 1: Reported */}
+                  <div className="relative">
+                    <div className="absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full bg-status-reported border border-canvas" />
+                    <div className="text-caption text-ink font-semibold">{t('status.pending')}</div>
+                  </div>
+
+                  {/* Step 2: Verified */}
+                  <div className="relative">
+                    <div className={`absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full border border-canvas ${
+                      ['verified', 'in_progress', 'resolved'].includes(report.status)
+                        ? 'bg-status-verified' + (report.status === 'verified' ? ' animate-pulse' : '')
+                        : 'bg-muted-soft'
+                    }`} />
+                    <div className={`text-caption font-semibold ${
+                      ['verified', 'in_progress', 'resolved'].includes(report.status) ? 'text-ink' : 'text-muted-soft font-medium'
+                    }`}>
+                      {t('status.verified')}
                     </div>
                   </div>
-                ))
+
+                  {/* Step 3: In Progress */}
+                  <div className="relative">
+                    <div className={`absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full border border-canvas ${
+                      ['in_progress', 'resolved'].includes(report.status)
+                        ? 'bg-status-inprogress' + (report.status === 'in_progress' ? ' animate-pulse' : '')
+                        : 'bg-muted-soft'
+                    }`} />
+                    <div className={`text-caption font-semibold ${
+                      ['in_progress', 'resolved'].includes(report.status) ? 'text-ink' : 'text-muted-soft font-medium'
+                    }`}>
+                      {t('status.in_progress')}
+                    </div>
+                  </div>
+
+                  {/* Step 4: Resolved */}
+                  <div className="relative">
+                    <div className={`absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full border border-canvas ${
+                      report.status === 'resolved'
+                        ? 'bg-status-resolved animate-pulse'
+                        : 'bg-muted-soft'
+                    }`} />
+                    <div className={`text-caption font-semibold ${
+                      report.status === 'resolved' ? 'text-ink font-semibold' : 'text-muted-soft font-medium'
+                    }`}>
+                      {t('status.resolved')}
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           </div>
