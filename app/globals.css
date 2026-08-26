@@ -61,6 +61,58 @@
   --popup-text: #111111;
 }
 
+/* ─── Dark mode overrides ─────────────────────────────────────────────────── */
+/* Applied when the <html> element carries the `dark` class.                   */
+.dark {
+  --background: #0f1117;
+  --foreground: #f0f2f5;
+  --grid-color: rgba(255, 255, 255, 0.025);
+  --glass-bg: rgba(15, 17, 23, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.08);
+
+  --popup-bg: rgba(26, 29, 40, 0.98);
+  --popup-border: #2d3148;
+  --popup-text: #f0f2f5;
+
+  /* Neutral surface palette */
+  --color-canvas: #0f1117;
+  --color-surface-soft: #161923;
+  --color-surface-card: #1a1d2b;
+  --color-surface-strong: #252837;
+  --color-surface-dark: #060810;
+  --color-surface-dark-elevated: #0d1021;
+
+  /* Text palette */
+  --color-ink: #f0f2f5;
+  --color-body: #b0b8c8;
+  --color-muted: #6b7a99;
+  --color-muted-soft: #5a6478;
+
+  /* Borders */
+  --color-hairline: #252837;
+  --color-hairline-soft: #1e2130;
+
+  /* Primary action — keep brand blue, lighten slightly for contrast */
+  --color-primary: #e8eaf0;
+  --color-primary-active: #ffffff;
+  --color-primary-disabled: #252837;
+  --color-on-primary: #0f1117;
+
+  /* Brand accent stays blue — slightly lighter for dark bg readability */
+  --color-brand-accent: #4b8ef7;
+
+  /* Status colours — same hue, slightly brighter for dark bg */
+  --color-status-reported: #fbbf24;
+  --color-status-verified: #60a5fa;
+  --color-status-inprogress: #a78bfa;
+  --color-status-resolved: #34d399;
+  --color-status-rejected: #f87171;
+
+  --color-success: #34d399;
+  --color-warning: #fbbf24;
+  --color-error: #f87171;
+}
+
 body {
   background-color: var(--background);
   color: var(--foreground);
@@ -139,6 +191,17 @@ body {
 .custom-leaflet-popup .leaflet-popup-content {
   margin: 12px 14px !important;
   line-height: inherit !important;
+}
+
+/* Dark mode Leaflet controls */
+.dark .leaflet-bar a {
+  background-color: var(--color-surface-card) !important;
+  color: var(--color-body) !important;
+  border-bottom: 1px solid var(--color-hairline) !important;
+}
+.dark .leaflet-bar a:hover {
+  background-color: var(--color-surface-strong) !important;
+  color: var(--color-ink) !important;
 }
 
 /* Typography styles based on design.md */
