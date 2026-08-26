@@ -7,6 +7,7 @@ import { Shield, LogOut, MapPin, User, Menu, X, PlusCircle, Globe, ChevronDown, 
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import { useLanguage } from '@/lib/LanguageContext'
 import { LANGUAGES } from '@/lib/translations'
+import { ThemeToggle } from '@/components/ThemeToggle'
 
 export function Navbar() {
   const pathname = usePathname()
@@ -347,6 +348,9 @@ export function Navbar() {
             </div>
           )}
 
+          {/* Theme Toggle */}
+          <ThemeToggle />
+
           {/* Language Selector */}
           <div className="relative">
             <button
@@ -468,9 +472,12 @@ export function Navbar() {
 
           {/* Mobile Language Section */}
           <div className="pt-4 border-t border-hairline">
-            <div className="flex items-center gap-2 text-muted text-caption font-semibold px-2 mb-3">
-              <Globe className="w-3.5 h-3.5 text-brand-accent" />
-              <span>Choose Language</span>
+            <div className="flex items-center justify-between mb-3 px-2">
+              <div className="flex items-center gap-2 text-muted text-caption font-semibold">
+                <Globe className="w-3.5 h-3.5 text-brand-accent" />
+                <span>Choose Language</span>
+              </div>
+              <ThemeToggle />
             </div>
             <div className="grid grid-cols-2 gap-2">
               {LANGUAGES.map((lang) => (
