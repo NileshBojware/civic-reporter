@@ -35,6 +35,15 @@ export interface ReportVote {
   user_id: string
 }
 
+export interface Comment {
+  id: string
+  report_id: string
+  user_id: string | null
+  author_name: string
+  body: string
+  created_at: string
+}
+
 export interface MockNotification {
   id: string
   user_id: string
@@ -51,6 +60,7 @@ interface MockData {
   reports: Report[]
   report_votes: ReportVote[]
   notifications: MockNotification[]
+  comments: Comment[]
 }
 
 const defaultData: MockData = {
@@ -131,6 +141,24 @@ const defaultData: MockData = {
       type: 'status_change',
       created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
     }
+  ],
+  comments: [
+    {
+      id: 'comment-1',
+      report_id: 'report-1',
+      user_id: 'citizen-id-123',
+      author_name: 'John Citizen',
+      body: 'This pothole has been here for weeks, my bike tyre burst because of it!',
+      created_at: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: 'comment-2',
+      report_id: 'report-1',
+      user_id: null,
+      author_name: 'Anonymous',
+      body: 'Agreed, very dangerous especially at night. Please fix urgently.',
+      created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()
+    }
   ]
 }
 
@@ -141,7 +169,13 @@ export function readMockDb(): MockData {
   }
   try {
     const fileContent = fs.readFileSync(MOCK_DB_PATH, 'utf-8')
-    return JSON.parse(fileContent)
+    const parsed = JSON.parse(fileContent)
+    // Back-fill any keys added after the file was first written
+    return {
+      ...defaultData,
+      ...parsed,
+      comments: parsed.comments ?? defaultData.comments,
+    }
   } catch (e) {
     return defaultData
   }

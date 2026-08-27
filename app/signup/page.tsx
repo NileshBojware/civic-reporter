@@ -92,23 +92,22 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex-grow flex items-center justify-center px-4 py-16 bg-zinc-950/20">
-      <div className="w-full max-w-md p-8 rounded-3xl glass-panel relative overflow-hidden shadow-2xl">
-        <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-purple-500/30 to-transparent" />
-
+    <div className="flex-grow flex items-center justify-center px-4 py-16 bg-canvas text-body">
+      <div className="w-full max-w-md p-8 rounded-lg border border-hairline bg-canvas shadow-md">
+        
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-extrabold text-zinc-100">{t('signup.title')}</h2>
-          <p className="text-zinc-400 text-xs mt-1.5">{t('signup.subtitle')}</p>
+          <h2 className="text-display-sm text-ink mb-2">{t('signup.title')}</h2>
+          <p className="text-body-sm text-body">{t('signup.subtitle')}</p>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold leading-relaxed">
+          <div className="mb-6 p-4 rounded-md bg-status-rejected/10 border border-status-rejected/20 text-status-rejected text-body-sm font-semibold leading-relaxed">
             {error}
           </div>
         )}
 
         {success && (
-          <div className="mb-6 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold leading-relaxed">
+          <div className="mb-6 p-4 rounded-md bg-status-resolved/10 border border-status-resolved/20 text-status-resolved text-body-sm font-semibold leading-relaxed">
             {isSupabaseConfigured
               ? 'Registration successful! (Email automatically verified for convenience). Redirecting to login...'
               : 'Sign up successful! Logging you in...'}
@@ -117,51 +116,51 @@ export default function SignupPage() {
 
         <form onSubmit={handleSignup} className="space-y-5">
           <div>
-            <label className="text-xs font-bold text-zinc-400 block mb-1.5">{t('signup.fieldName')}</label>
+            <label className="text-caption font-bold text-muted block mb-1.5">{t('signup.fieldName')}</label>
             <div className="relative">
-              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-zinc-500" />
+              <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-muted" />
               <input
                 type="text"
                 required
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="John Doe"
-                className="w-full pl-10 pr-4 py-3 rounded-2xl bg-zinc-900/60 border border-zinc-800 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-purple-500 transition"
+                className="w-full pl-10 pr-4 py-2.5 h-10 rounded-md bg-canvas border border-hairline text-body-md text-ink placeholder-muted focus:outline-none focus:border-primary transition"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-xs font-bold text-zinc-400 block mb-1.5">{t('login.fieldEmail')}</label>
+            <label className="text-caption font-bold text-muted block mb-1.5">{t('login.fieldEmail')}</label>
             <div className="relative">
-              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-zinc-500" />
+              <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-muted" />
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full pl-10 pr-4 py-3 rounded-2xl bg-zinc-900/60 border border-zinc-800 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-purple-500 transition"
+                className="w-full pl-10 pr-4 py-2.5 h-10 rounded-md bg-canvas border border-hairline text-body-md text-ink placeholder-muted focus:outline-none focus:border-primary transition"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-xs font-bold text-zinc-400 block mb-1.5">{t('login.fieldPass')}</label>
+            <label className="text-caption font-bold text-muted block mb-1.5">{t('login.fieldPass')}</label>
             <div className="relative">
-              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-zinc-500" />
+              <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-muted" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Min 6 characters"
-                className="w-full pl-10 pr-10 py-3 rounded-2xl bg-zinc-900/60 border border-zinc-800 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-purple-500 transition"
+                className="w-full pl-10 pr-10 py-2.5 h-10 rounded-md bg-canvas border border-hairline text-body-md text-ink placeholder-muted focus:outline-none focus:border-primary transition"
               />
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition cursor-pointer"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-ink transition cursor-pointer"
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -171,16 +170,16 @@ export default function SignupPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 mt-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-sm font-extrabold shadow-lg shadow-purple-600/20 hover:shadow-purple-600/30 hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-50 disabled:shadow-none transition-all duration-200 cursor-pointer"
+            className="btn-primary w-full h-10 text-body-sm shadow-sm"
           >
             {loading ? t('signup.btnSigning') : t('signup.btnSignup')}
           </button>
         </form>
 
         <div className="mt-8 text-center">
-          <p className="text-xs text-zinc-500">
+          <p className="text-caption text-muted">
             {t('signup.hasAcc')}{' '}
-            <Link href="/login" className="font-bold text-purple-400 hover:text-purple-300 transition-colors">
+            <Link href="/login" className="font-bold text-brand-accent hover:underline">
               {t('signup.loginLink')}
             </Link>
           </p>

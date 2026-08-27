@@ -253,3 +253,32 @@ create trigger on_report_status_changed
   for each row execute procedure public.handle_status_change_notification();
 
 
+
+-- 7. Comments System
+
+create table if not exists public.report_comments (
+  id uuid primary key default gen_random_uuid(),
+  report_id uuid references public.reports(id) on delete cascade not null,
+  user_id uuid references public.profiles(id) on delete set null,
+  body text not null check (char_length(body) between 1 and 1000),
+  created_at timestamptz default now()
+);
+
+alter table public.report_comments enable row level security;
+
+drop policy if exists "Allow public read access to comments" on public.report_comments;
+drop policy if exists "Allow authenticated users to post comments" on public.report_comments;
+drop policy if exists "Allow users to delete their own comments" on public.report_comments;
+
+create policy "Allow public read access to comments"
+  on public.report_comments for select
+  using (true);
+
+create policy "Allow authenticated users to post comments"
+  on public.report_comments for insert
+  to authenticated
+  with check (auth.uid() = user_id);
+
+create policy "Allow users to delete their own comments"
+  on public.report_comments for delete
+  using (auth.uid() = user_id);
