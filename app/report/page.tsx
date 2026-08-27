@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { MapPin, Image as ImageIcon, Sparkles, AlertTriangle, CheckCircle, Navigation, ArrowLeft, Camera, RefreshCw, X, Check } from 'lucide-react'
+import { MapPin, Image as ImageIcon, Sparkles, AlertTriangle, Navigation, ArrowLeft, Camera, RefreshCw, X } from 'lucide-react'
 import { extractGPSFromJPEG, GPSCoordinates } from '@/lib/exif'
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import imageCompression from 'browser-image-compression'
@@ -15,8 +15,8 @@ import { useLanguage } from '@/lib/LanguageContext'
 const MapPicker = dynamic(() => import('@/components/MapPicker'), {
   ssr: false,
   loading: () => (
-    <div className="w-full h-[300px] rounded-2xl bg-zinc-900 border border-zinc-800 animate-pulse flex items-center justify-center">
-      <span className="text-zinc-500 text-sm font-semibold">Loading...</span>
+    <div className="w-full h-[300px] rounded-lg bg-surface-card border border-hairline animate-pulse flex items-center justify-center">
+      <span className="text-muted text-body-sm font-semibold">Loading map picker...</span>
     </div>
   ),
 })
@@ -351,7 +351,6 @@ export default function ReportPage() {
         setDuplicates(data.duplicates || [])
         setCheckedDuplicates(true)
         if (data.duplicates && data.duplicates.length > 0) {
-          // Found duplicate, show warning, but let them choose
           setBypassDuplicates(false)
         } else {
           setBypassDuplicates(true)
@@ -363,7 +362,6 @@ export default function ReportPage() {
     }
   }
 
-  // Run duplicate check automatically on step transition/validation
   useEffect(() => {
     if (category && latitude && longitude) {
       triggerDuplicateCheck()
@@ -390,7 +388,6 @@ export default function ReportPage() {
       let finalImageUrl = photoUrl
 
       if (isSupabaseConfigured && supabase && photo) {
-        // Upload image evidence to Supabase bucket
         const fileExt = photo.name.split('.').pop()
         const fileName = `evidence_${Date.now()}.${fileExt}`
         const filePath = `${user.id}/${fileName}`
@@ -401,7 +398,6 @@ export default function ReportPage() {
 
         if (uploadError) throw uploadError
 
-        // Get public image URL
         const { data: publicUrlData } = supabase.storage
           .from('reports-evidence')
           .getPublicUrl(filePath)
@@ -409,7 +405,6 @@ export default function ReportPage() {
         finalImageUrl = publicUrlData.publicUrl
       }
 
-      // Create Report API call
       const res = await fetch('/api/reports', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -430,12 +425,11 @@ export default function ReportPage() {
         throw new Error(errData.error || 'Failed to submit report')
       }
 
-      // Confetti feedback!
       confetti({
         particleCount: 150,
         spread: 80,
         origin: { y: 0.6 },
-        colors: ['#a855f7', '#6366f1', '#3b82f6'],
+        colors: ['#2563eb', '#111111', '#10b981'],
       })
 
       alert(t('form.successTitle'))
@@ -450,31 +444,31 @@ export default function ReportPage() {
 
   if (loadingAuth) {
     return (
-      <div className="flex-grow flex items-center justify-center bg-zinc-950">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500" />
+      <div className="flex-grow flex items-center justify-center bg-canvas">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
       </div>
     )
   }
 
   if (!user) {
     return (
-      <div className="flex-grow flex items-center justify-center px-4 py-16">
-        <div className="w-full max-w-md p-8 rounded-3xl glass-panel text-center">
-          <AlertTriangle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-zinc-100 mb-2">Auth Required</h2>
-          <p className="text-zinc-400 text-sm mb-6 leading-relaxed">
+      <div className="flex-grow flex items-center justify-center px-4 py-16 bg-canvas">
+        <div className="w-full max-w-md p-8 rounded-lg border border-hairline bg-canvas text-center shadow-md">
+          <AlertTriangle className="w-12 h-12 text-status-reported mx-auto mb-4" />
+          <h2 className="text-title-lg font-bold text-ink mb-2">Auth Required</h2>
+          <p className="text-body text-body-sm mb-6 leading-relaxed">
             You must be logged in as a citizen to submit a new civic issue report.
           </p>
           <div className="flex flex-col gap-3">
             <Link
               href="/login"
-              className="py-3.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold rounded-2xl transition"
+              className="btn-primary w-full flex items-center justify-center"
             >
               Log In Now
             </Link>
             <Link
               href="/signup"
-              className="py-3.5 bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs font-bold rounded-2xl hover:bg-zinc-800 transition"
+              className="btn-secondary w-full flex items-center justify-center"
             >
               Sign Up
             </Link>
@@ -485,80 +479,77 @@ export default function ReportPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-10 md:py-16">
-      {/* Back button */}
+    <div className="container mx-auto max-w-3xl px-4 py-10 md:py-16 bg-canvas">
+      {/* Back button link */}
       <Link
         href="/"
-        className="inline-flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-200 mb-6 transition"
+        className="inline-flex items-center gap-1.5 text-caption font-semibold text-muted hover:text-ink mb-6 transition"
       >
         <ArrowLeft className="w-4 h-4" />
-        {t('form.btnBack')}
+        <span>{t('form.btnBack')}</span>
       </Link>
 
       <div className="mb-8">
-        <h1 className="text-2xl md:text-3xl font-extrabold text-zinc-100">{t('form.title')}</h1>
-        <p className="text-zinc-400 text-sm mt-1">{t('form.subtitle')}</p>
+        <h1 className="text-display-md text-ink mb-2">{t('form.title')}</h1>
+        <p className="text-body-sm text-body">{t('form.subtitle')}</p>
       </div>
 
       {error && (
-        <div className="mb-6 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs font-semibold leading-relaxed">
+        <div className="mb-6 p-4 rounded-md bg-status-rejected/10 border border-status-rejected/20 text-status-rejected text-body-sm font-semibold leading-relaxed">
           {error}
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Step 1: General Details */}
-        <div className="p-6 md:p-8 rounded-3xl glass-panel space-y-6">
-          <h3 className="text-base font-bold text-zinc-100 border-b border-zinc-800 pb-3 flex items-center gap-2">
-            <span className="w-6 h-6 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center text-xs font-bold">1</span>
-            {t('form.fieldTitle')}
+        <div className="p-6 md:p-8 rounded-lg bg-canvas border border-hairline shadow-sm space-y-6">
+          <h3 className="text-title-md font-bold text-ink border-b border-hairline pb-3 flex items-center gap-2">
+            <span className="w-6 h-6 rounded-md bg-primary text-on-primary flex items-center justify-center text-xs font-bold">1</span>
+            <span>Issue Details</span>
           </h3>
 
           <div>
-            <label className="text-xs font-bold text-zinc-400 block mb-1.5">{t('form.fieldTitle')} *</label>
+            <label className="text-caption font-bold text-muted block mb-1.5">{t('form.fieldTitle')} *</label>
             <input
               type="text"
               required
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={t('form.titlePlaceholder')}
-              className="w-full px-4 py-3 rounded-2xl bg-zinc-900/60 border border-zinc-850 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-purple-500 transition"
+              className="w-full px-4 py-2.5 h-10 rounded-md bg-canvas border border-hairline text-body-md text-ink placeholder-muted focus:outline-none focus:border-primary transition"
             />
           </div>
 
           <div>
-            <label className="text-xs font-bold text-zinc-400 block mb-1.5">{t('form.fieldDesc')}</label>
+            <label className="text-caption font-bold text-muted block mb-1.5">{t('form.fieldDesc')}</label>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              rows={3}
+              rows={4}
               placeholder={t('form.descPlaceholder')}
-              className="w-full px-4 py-3 rounded-2xl bg-zinc-900/60 border border-zinc-850 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-purple-500 transition resize-none"
+              className="w-full px-4 py-3 rounded-md bg-canvas border border-hairline text-body-md text-ink placeholder-muted focus:outline-none focus:border-primary transition resize-none"
             />
           </div>
 
           <div>
             <div className="flex items-center justify-between gap-4 mb-1.5">
-              <label className="text-xs font-bold text-zinc-400">{t('form.fieldCategory')} *</label>
+              <label className="text-caption font-bold text-muted">{t('form.fieldCategory')} *</label>
               <button
                 type="button"
                 disabled
-                className="text-[10px] text-zinc-500 font-bold bg-zinc-900 px-2 py-0.5 rounded border border-zinc-850 flex items-center gap-1 cursor-not-allowed group relative"
+                className="text-[10px] text-muted-soft font-bold bg-surface-soft px-2 py-0.5 rounded border border-hairline flex items-center gap-1 cursor-not-allowed group relative"
               >
-                <Sparkles className="w-3 h-3 text-purple-400 animate-pulse" />
+                <Sparkles className="w-3 h-3 text-brand-accent animate-pulse" />
                 Auto-detect from Photo (Pro)
-                <span className="absolute bottom-full right-0 bg-zinc-950 text-zinc-400 border border-zinc-800 text-[8px] p-1 rounded hidden group-hover:block whitespace-nowrap mb-1">
-                  Coming soon.
-                </span>
               </button>
             </div>
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl bg-zinc-900/60 border border-zinc-850 text-sm text-zinc-100 focus:outline-none focus:border-purple-500 transition cursor-pointer"
+              className="w-full px-4 py-2 h-10 rounded-md bg-canvas border border-hairline text-body-md text-ink focus:outline-none focus:border-primary transition cursor-pointer"
             >
               {CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value} className="bg-zinc-900">
+                <option key={c.value} value={c.value}>
                   {t('category.' + c.value)}
                 </option>
               ))}
@@ -567,95 +558,93 @@ export default function ReportPage() {
         </div>
 
         {/* Step 2: Location Picker */}
-        <div className="p-6 md:p-8 rounded-3xl glass-panel space-y-6">
-          <div className="flex items-center justify-between gap-4 border-b border-zinc-800 pb-3">
-            <h3 className="text-base font-bold text-zinc-100 flex items-center gap-2">
-              <span className="w-6 h-6 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center text-xs font-bold">2</span>
-              {t('form.fieldLocation')}
+        <div className="p-6 md:p-8 rounded-lg bg-canvas border border-hairline shadow-sm space-y-6">
+          <div className="flex items-center justify-between gap-4 border-b border-hairline pb-3">
+            <h3 className="text-title-md font-bold text-ink flex items-center gap-2">
+              <span className="w-6 h-6 rounded-md bg-primary text-on-primary flex items-center justify-center text-xs font-bold">2</span>
+              <span>{t('form.fieldLocation')}</span>
             </h3>
             <button
               type="button"
               onClick={handleGeoLocate}
               disabled={locating}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 text-xs font-bold transition disabled:opacity-50 cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-canvas hover:bg-surface-soft text-body hover:text-ink border border-hairline text-caption font-semibold transition disabled:opacity-50 cursor-pointer h-9"
             >
-              <Navigation className={`w-3.5 h-3.5 ${locating ? 'animate-spin' : ''}`} />
+              <Navigation className={`w-3.5 h-3.5 text-brand-accent ${locating ? 'animate-spin' : ''}`} />
               <span>{locating ? t('form.locating') : t('form.btnLocate')}</span>
             </button>
           </div>
 
-          <MapPicker lat={latitude} lng={longitude} onChange={handleMapChange} />
+          <div className="rounded-lg overflow-hidden border border-hairline">
+            <MapPicker lat={latitude} lng={longitude} onChange={handleMapChange} />
+          </div>
 
           <div>
-            <label className="text-xs font-bold text-zinc-400 block mb-1.5">Detected Address / Landmarks *</label>
+            <label className="text-caption font-bold text-muted block mb-1.5">Detected Address / Landmarks *</label>
             <div className="relative">
-              <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4.5 h-4.5 text-zinc-500" />
+              <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted shrink-0" />
               <input
                 type="text"
                 required
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
                 placeholder={t('form.locPlaceholder')}
-                className="w-full pl-10 pr-4 py-3 rounded-2xl bg-zinc-900/60 border border-zinc-850 text-sm text-zinc-100 placeholder-zinc-600 focus:outline-none focus:border-purple-500 transition"
+                className="w-full pl-10 pr-4 py-2.5 h-10 rounded-md bg-canvas border border-hairline text-body-md text-ink placeholder-muted focus:outline-none focus:border-primary transition"
               />
             </div>
           </div>
         </div>
 
         {/* Step 3: Evidence Upload */}
-        <div className="p-6 md:p-8 rounded-3xl glass-panel space-y-6">
-          <h3 className="text-base font-bold text-zinc-100 border-b border-zinc-800 pb-3 flex items-center gap-2">
-            <span className="w-6 h-6 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center text-xs font-bold">3</span>
-            {t('form.fieldPhoto')} *
+        <div className="p-6 md:p-8 rounded-lg bg-canvas border border-hairline shadow-sm space-y-6">
+          <h3 className="text-title-md font-bold text-ink border-b border-hairline pb-3 flex items-center gap-2">
+            <span className="w-6 h-6 rounded-md bg-primary text-on-primary flex items-center justify-center text-xs font-bold">3</span>
+            <span>{t('form.fieldPhoto')} *</span>
           </h3>
 
           {cameraActive ? (
-            <div className="relative w-full rounded-2xl overflow-hidden border border-zinc-800 bg-black flex flex-col items-center p-2">
+            <div className="relative w-full rounded-lg overflow-hidden border border-hairline bg-surface-dark p-2 flex flex-col items-center">
               <video
                 ref={videoRef}
                 autoPlay
                 playsInline
-                className="w-full max-h-[350px] object-cover rounded-xl"
+                className="w-full max-h-[350px] object-cover rounded-md"
               />
-              {/* Camera Overlays / Controls */}
               <div className="absolute bottom-6 left-0 right-0 flex items-center justify-center gap-6 z-20">
-                {/* Cancel Camera */}
                 <button
                   type="button"
                   onClick={stopCamera}
-                  className="p-3 rounded-full bg-zinc-900/90 hover:bg-zinc-800 text-zinc-400 hover:text-white transition border border-zinc-800 backdrop-blur-sm cursor-pointer shadow-lg"
+                  className="p-3 rounded-full bg-surface-dark-elevated hover:bg-surface-dark text-on-dark-soft hover:text-on-dark transition border border-hairline-soft cursor-pointer shadow-lg"
                   title={t('form.closeCamera')}
                 >
                   <X className="w-5 h-5" />
                 </button>
                 
-                {/* Shutter Button */}
                 <button
                   type="button"
                   onClick={capturePhoto}
-                  className="w-14 h-14 rounded-full bg-white hover:bg-zinc-200 border-4 border-zinc-950 flex items-center justify-center transition hover:scale-105 shadow-xl cursor-pointer"
+                  className="w-14 h-14 rounded-full bg-canvas hover:bg-surface-soft border-4 border-surface-dark flex items-center justify-center transition hover:scale-105 shadow-xl cursor-pointer"
                   title={t('form.capturePhoto')}
                 >
-                  <div className="w-6 h-6 rounded-full bg-purple-600 animate-pulse" />
+                  <div className="w-6 h-6 rounded-full bg-primary animate-pulse" />
                 </button>
 
-                {/* Switch Camera */}
                 <button
                   type="button"
                   onClick={toggleCamera}
-                  className="p-3 rounded-full bg-zinc-900/90 hover:bg-zinc-800 text-zinc-400 hover:text-white transition border border-zinc-800 backdrop-blur-sm cursor-pointer shadow-lg"
+                  className="p-3 rounded-full bg-surface-dark-elevated hover:bg-surface-dark text-on-dark-soft hover:text-on-dark transition border border-hairline-soft cursor-pointer shadow-lg"
                   title={t('form.switchCamera')}
                 >
                   <RefreshCw className="w-5 h-5" />
                 </button>
               </div>
-              <div className="absolute top-4 left-4 bg-zinc-900/90 backdrop-blur-sm text-[10px] font-bold text-purple-400 px-3 py-1 rounded-full border border-purple-500/20 flex items-center gap-1.5 shadow-lg">
-                <span className="w-2 h-2 rounded-full bg-purple-500 animate-ping" />
+              <div className="absolute top-4 left-4 bg-surface-dark-elevated text-[10px] font-bold text-on-dark px-3 py-1 rounded-full border border-hairline-soft flex items-center gap-1.5 shadow-lg">
+                <span className="w-2 h-2 rounded-full bg-status-resolved animate-ping" />
                 <span>Live Camera</span>
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center border-2 border-dashed border-zinc-800 hover:border-purple-500/40 rounded-2xl p-6 transition bg-zinc-900/10 relative">
+            <div className="flex flex-col items-center justify-center border-2 border-dashed border-hairline hover:border-muted rounded-lg p-8 transition bg-surface-soft/30 relative">
               <input
                 type="file"
                 accept="image/*"
@@ -670,9 +659,9 @@ export default function ReportPage() {
                   <img
                     src={photoUrl}
                     alt="Evidence Preview"
-                    className="max-h-52 rounded-xl mx-auto border border-zinc-850 mb-3 object-contain"
+                    className="max-h-52 rounded-md mx-auto border border-hairline mb-3 object-contain"
                   />
-                  <span className="text-[10px] text-zinc-500 font-bold block">
+                  <span className="text-[10px] text-muted font-semibold block">
                     Compressed size: {(photo!.size / 1024).toFixed(1)} KB
                   </span>
                   
@@ -680,43 +669,43 @@ export default function ReportPage() {
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-bold rounded-xl transition cursor-pointer"
+                      className="btn-secondary h-9 py-1 px-4 text-caption"
                     >
                       {t('form.btnBrowse')}
                     </button>
                     <button
                       type="button"
                       onClick={() => startCamera('environment')}
-                      className="px-4 py-2 bg-purple-600/10 hover:bg-purple-600/20 border border-purple-500/20 text-purple-400 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5"
+                      className="btn-secondary h-9 py-1 px-4 text-caption flex items-center gap-1.5"
                     >
-                      <Camera className="w-3.5 h-3.5" />
-                      {t('form.openCamera')}
+                      <Camera className="w-3.5 h-3.5 text-brand-accent" />
+                      <span>{t('form.openCamera')}</span>
                     </button>
                   </div>
                 </div>
               ) : (
                 <div className="text-center py-4">
-                  <div className="w-12 h-12 rounded-full bg-zinc-900 flex items-center justify-center mx-auto mb-3 border border-zinc-800">
-                    <ImageIcon className="w-5 h-5 text-zinc-500" />
+                  <div className="w-12 h-12 rounded-full bg-canvas flex items-center justify-center mx-auto mb-3 border border-hairline">
+                    <ImageIcon className="w-5 h-5 text-muted" />
                   </div>
-                  <p className="text-sm font-semibold text-zinc-200 mb-1">Select photo evidence</p>
-                  <p className="text-xs text-zinc-500 mb-5">{t('form.photoHelp')}</p>
+                  <p className="text-body-sm font-bold text-ink mb-1">Select photo evidence</p>
+                  <p className="text-caption text-muted mb-5">{t('form.photoHelp')}</p>
                   
                   <div className="flex flex-col sm:flex-row justify-center items-center gap-3">
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="w-full sm:w-auto px-5 py-2.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 text-xs font-bold rounded-xl transition cursor-pointer"
+                      className="w-full sm:w-auto btn-secondary"
                     >
                       {t('form.btnBrowse')}
                     </button>
                     <button
                       type="button"
                       onClick={() => startCamera('environment')}
-                      className="w-full sm:w-auto px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white text-xs font-bold rounded-xl transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-purple-600/10"
+                      className="w-full sm:w-auto btn-primary flex items-center justify-center gap-1.5 shadow-sm"
                     >
                       <Camera className="w-3.5 h-3.5" />
-                      {t('form.openCamera')}
+                      <span>{t('form.openCamera')}</span>
                     </button>
                   </div>
                 </div>
@@ -725,22 +714,22 @@ export default function ReportPage() {
           )}
 
           {compressing && (
-            <div className="text-center py-2 text-xs text-purple-400 font-semibold animate-pulse">
-              Compressing...
+            <div className="text-center py-2 text-caption text-brand-accent font-semibold animate-pulse">
+              Compressing photo...
             </div>
           )}
 
           {/* Device Geotag toggle */}
           {!photoUrl && !cameraActive && (
-            <div className="flex items-center gap-2 pt-2 border-t border-zinc-800/40">
+            <div className="flex items-center gap-2 pt-2 border-t border-hairline-soft">
               <input
                 type="checkbox"
                 id="deviceGeotag"
                 checked={autoGeotag}
                 onChange={(e) => setAutoGeotag(e.target.checked)}
-                className="rounded border-zinc-800 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                className="rounded border-hairline text-primary focus:ring-primary cursor-pointer w-4 h-4"
               />
-              <label htmlFor="deviceGeotag" className="text-xs font-semibold text-zinc-400 cursor-pointer select-none">
+              <label htmlFor="deviceGeotag" className="text-caption font-bold text-muted cursor-pointer select-none">
                 {t('form.deviceGeotagToggle')}
               </label>
             </div>
@@ -748,26 +737,26 @@ export default function ReportPage() {
 
           {/* EXIF GPS detected Dialog banner */}
           {showGpsDialog && detectedGps && (
-            <div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20 space-y-3 animate-fade-in">
+            <div className="p-4 rounded-md bg-brand-accent/5 border border-brand-accent/20 space-y-3 animate-fade-in">
               <div className="flex items-start gap-2.5">
-                <MapPin className="w-5 h-5 text-purple-400 shrink-0 mt-0.5 animate-bounce" />
+                <MapPin className="w-5 h-5 text-brand-accent shrink-0 mt-0.5 animate-bounce" />
                 <div>
-                  <h4 className="text-xs font-bold text-zinc-100">{t('form.gpsDetectedTitle')}</h4>
-                  <p className="text-[11px] text-zinc-400 mt-0.5 leading-relaxed">{t('form.gpsDetectedDesc')}</p>
+                  <h4 className="text-body-sm font-bold text-ink">{t('form.gpsDetectedTitle')}</h4>
+                  <p className="text-caption text-body mt-0.5 leading-relaxed">{t('form.gpsDetectedDesc')}</p>
                 </div>
               </div>
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={applyPhotoGps}
-                  className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-[10px] font-extrabold transition cursor-pointer shadow-sm"
+                  className="btn-primary h-8 py-1 px-3 text-caption"
                 >
                   {t('form.btnApplyGps')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowGpsDialog(false)}
-                  className="px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-350 text-[10px] font-bold transition cursor-pointer"
+                  className="btn-secondary h-8 py-1 px-3 text-caption"
                 >
                   {t('form.btnIgnoreGps')}
                 </button>
@@ -778,32 +767,32 @@ export default function ReportPage() {
 
         {/* Duplicate warning box */}
         {duplicates.length > 0 && !bypassDuplicates && (
-          <div className="p-6 rounded-3xl bg-amber-500/10 border border-amber-500/20 space-y-4">
+          <div className="p-6 rounded-lg bg-status-reported/10 border border-status-reported/20 space-y-4">
             <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+              <AlertTriangle className="w-5 h-5 text-status-reported shrink-0 mt-0.5" />
               <div>
-                <h4 className="text-sm font-extrabold text-amber-500">
+                <h4 className="text-body-sm font-bold text-status-reported">
                   {t('form.duplicateDetected')}
                 </h4>
-                <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
+                <p className="text-caption text-body mt-1 leading-relaxed">
                   {t('form.duplicateDesc')}
                 </p>
               </div>
             </div>
 
-            <div className="space-y-3 pt-2 border-t border-zinc-800/40">
+            <div className="space-y-3 pt-2 border-t border-hairline-soft">
               {duplicates.map((dup) => (
-                <div key={dup.id} className="flex justify-between items-center gap-3 p-3 bg-zinc-950/60 rounded-xl border border-zinc-900">
+                <div key={dup.id} className="flex justify-between items-center gap-3 p-3 bg-canvas rounded-md border border-hairline">
                   <div>
-                    <span className="text-xs font-bold text-zinc-200 block truncate max-w-[300px]">
+                    <span className="text-caption font-bold text-ink block truncate max-w-[300px]">
                       {dup.title}
                     </span>
-                    <span className="text-[10px] text-zinc-500 block">{dup.address}</span>
+                    <span className="text-[10px] text-muted block">{dup.address}</span>
                   </div>
                   <Link
                     href={`/reports/${dup.id}`}
                     target="_blank"
-                    className="text-[10px] font-extrabold text-purple-400 hover:text-purple-300 hover:underline shrink-0"
+                    className="text-caption font-bold text-brand-accent hover:underline shrink-0"
                   >
                     Inspect Issue &rarr;
                   </Link>
@@ -817,9 +806,9 @@ export default function ReportPage() {
                 id="bypass"
                 checked={bypassDuplicates}
                 onChange={(e) => setBypassDuplicates(e.target.checked)}
-                className="rounded border-zinc-800 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                className="rounded border-hairline text-primary focus:ring-primary cursor-pointer w-4 h-4"
               />
-              <label htmlFor="bypass" className="text-xs font-bold text-zinc-300 cursor-pointer select-none">
+              <label htmlFor="bypass" className="text-caption font-bold text-ink cursor-pointer select-none">
                 {t('form.bypassDuplicate')}
               </label>
             </div>
@@ -831,7 +820,7 @@ export default function ReportPage() {
           <button
             type="submit"
             disabled={submitting || compressing || (duplicates.length > 0 && !bypassDuplicates)}
-            className="w-full md:w-auto px-10 py-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold shadow-lg shadow-purple-600/20 hover:shadow-purple-600/30 hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-50 disabled:shadow-none transition-all duration-200 cursor-pointer"
+            className="btn-primary w-full md:w-auto px-10 h-12 text-body-sm shadow-sm"
           >
             {submitting ? t('form.btnSubmitting') : t('form.btnSubmit')}
           </button>

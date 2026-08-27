@@ -53,74 +53,98 @@ export function ReportCard({ report, onUpvote, isUpvoted = false }: ReportCardPr
     year: 'numeric',
   })
 
+  // Map category to design system color styles
+  const getCategoryStyles = (category: string) => {
+    switch (category) {
+      case 'garbage':
+        return 'text-category-waste bg-category-waste/10 border-category-waste/20'
+      case 'water_leakage':
+        return 'text-category-water bg-category-water/10 border-category-water/20'
+      case 'drainage':
+        return 'text-category-drainage bg-category-drainage/10 border-category-drainage/20'
+      case 'road_damage':
+        return 'text-category-waste bg-category-waste/10 border-category-waste/20'
+      case 'streetlight':
+        return 'text-category-water bg-category-water/10 border-category-water/20'
+      default:
+        return 'text-muted bg-surface-card border-hairline'
+    }
+  }
+
   return (
-    <div className="group relative flex flex-col justify-between rounded-3xl bg-zinc-900/60 border border-zinc-800 hover:border-purple-500/40 hover:shadow-[0_0_30px_-5px_rgba(168,85,247,0.15)] transition-all duration-300 overflow-hidden backdrop-blur-md">
-      {/* Top Banner Image */}
-      <div className="relative w-full h-48 overflow-hidden bg-zinc-950">
+    <div className="group flex flex-col sm:flex-row gap-5 p-6 bg-canvas border border-hairline rounded-lg hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition-all duration-200 relative">
+      {/* Left: Fixed aspect ratio image thumbnail */}
+      <div className="w-full sm:w-36 h-28 shrink-0 overflow-hidden rounded-md border border-hairline bg-surface-card relative">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={report.image_url || 'https://images.unsplash.com/photo-1584824486509-112e4181ff6b?auto=format&fit=crop&w=800&q=80'}
           alt={report.title}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-90 group-hover:opacity-100"
+          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           loading="lazy"
         />
-        {/* Absolute status badges */}
-        <div className="absolute top-4 left-4 z-10">
-          <span className="bg-zinc-950/80 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold border border-zinc-800 text-zinc-300">
-            {t('category.' + report.category)}
-          </span>
-        </div>
-        <div className="absolute top-4 right-4 z-10">
-          <StatusBadge status={report.status} />
-        </div>
       </div>
 
-      {/* Content Body */}
-      <div className="p-6 flex flex-col flex-grow">
-        <h3 className="text-lg font-bold text-zinc-100 group-hover:text-purple-400 transition-colors leading-snug mb-2 line-clamp-1">
-          {report.title}
-        </h3>
-        <p className="text-zinc-400 text-sm mb-4 line-clamp-2 leading-relaxed flex-grow">
-          {report.description}
-        </p>
+      {/* Right: Info and content body */}
+      <div className="flex-grow flex flex-col justify-between min-w-0">
+        <div>
+          {/* Header row: Title */}
+          <div className="flex items-start justify-between gap-4 mb-1">
+            <h3 className="text-title-md font-bold text-ink group-hover:text-primary transition-colors leading-snug line-clamp-1">
+              {report.title}
+            </h3>
+          </div>
 
-        {/* Address and Info */}
-        <div className="space-y-2 mb-6">
-          <div className="flex items-start gap-2 text-xs text-zinc-400">
-            <MapPin className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
-            <span className="truncate leading-relaxed">{report.address}</span>
+          {/* Subheader: location and timestamp */}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-muted mb-2">
+            <div className="flex items-center gap-1 min-w-0">
+              <MapPin className="w-3.5 h-3.5 text-brand-accent shrink-0" />
+              <span className="truncate">{report.address}</span>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              <Calendar className="w-3.5 h-3.5 text-muted shrink-0" />
+              <span>{t('card.reportedOn')} {formattedDate}</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 text-xs text-zinc-400">
-            <Calendar className="w-4 h-4 text-zinc-500 shrink-0" />
-            <span>{t('card.reportedOn')} {formattedDate}</span>
+
+          {/* Badges row */}
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <span className={`inline-flex items-center px-3 py-1 rounded-pill text-caption font-semibold border ${getCategoryStyles(report.category)}`}>
+              {t('category.' + report.category)}
+            </span>
+            <StatusBadge status={report.status} />
           </div>
+
+          {/* Description truncated to 2 lines */}
+          <p className="text-body-md text-body line-clamp-2 leading-relaxed mb-4">
+            {report.description}
+          </p>
         </div>
 
-        {/* Card Footer Actions */}
-        <div className="flex items-center justify-between gap-4 pt-4 border-t border-zinc-800/80">
+        {/* Footer actions */}
+        <div className="flex items-center justify-between gap-4 pt-3 border-t border-hairline-soft mt-auto">
           {onUpvote ? (
             <button
               onClick={handleUpvote}
               disabled={loading}
-              className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-semibold border transition-all duration-200 ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-caption font-semibold border transition-all duration-150 cursor-pointer ${
                 upvoted
-                  ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 hover:bg-purple-500/30'
-                  : 'bg-zinc-800/30 text-zinc-400 border-zinc-800 hover:bg-zinc-800/80 hover:text-zinc-200'
+                  ? 'bg-brand-accent/10 text-brand-accent border-brand-accent/20 hover:bg-brand-accent/15'
+                  : 'bg-surface-card text-body border-hairline hover:bg-surface-strong hover:text-ink'
               }`}
             >
-              <ThumbsUp className={`w-3.5 h-3.5 ${upvoted ? 'fill-purple-400 text-purple-400' : ''} ${loading ? 'animate-bounce' : ''}`} />
+              <ThumbsUp className={`w-3.5 h-3.5 ${upvoted ? 'fill-brand-accent text-brand-accent' : ''} ${loading ? 'animate-pulse' : ''}`} />
               <span>{upvoteCount} {t('card.upvotes')}</span>
             </button>
           ) : (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-zinc-800/30 border border-zinc-850 text-xs text-zinc-400 font-semibold">
-              <ThumbsUp className="w-3.5 h-3.5" />
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-pill bg-surface-card border border-hairline text-caption text-body font-semibold">
+              <ThumbsUp className="w-3.5 h-3.5 text-muted" />
               <span>{upvoteCount} {t('card.upvotes')}</span>
             </div>
           )}
 
           <Link
             href={`/reports/${report.id}`}
-            className="inline-flex items-center gap-1 text-xs font-bold text-purple-400 hover:text-purple-300 transition-colors group/link"
+            className="inline-flex items-center gap-1 text-caption font-semibold text-ink hover:underline group/link"
           >
             <span>{t('card.details')}</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover/link:translate-x-1 transition-transform" />

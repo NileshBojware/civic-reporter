@@ -19,9 +19,13 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const savedLang = localStorage.getItem('civic_reporter_lang') as Language
     if (savedLang && translations[savedLang]) {
-      setLanguageState(savedLang)
+      Promise.resolve().then(() => {
+        setLanguageState(savedLang)
+      })
     }
-    setMounted(true)
+    Promise.resolve().then(() => {
+      setMounted(true)
+    })
   }, [])
 
   const setLanguage = (lang: Language) => {
