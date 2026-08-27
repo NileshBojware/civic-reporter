@@ -6,6 +6,7 @@ import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { ArrowLeft, Calendar, MapPin, ThumbsUp, CheckCircle, HelpCircle, XCircle, AlertCircle } from 'lucide-react'
 import { StatusBadge } from '@/components/StatusBadge'
+import { CommentSection } from '@/components/CommentSection'
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import confetti from 'canvas-confetti'
 import { useLanguage } from '@/lib/LanguageContext'
@@ -29,6 +30,7 @@ export default function ReportDetailPage() {
   const [report, setReport] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
+  const [authorName, setAuthorName] = useState('Anonymous')
   const [upvoted, setUpvoted] = useState(false)
   const [actionLoading, setActionLoading] = useState(false)
 
@@ -54,11 +56,22 @@ export default function ReportDetailPage() {
     const checkUser = async () => {
       if (isSupabaseConfigured && supabase) {
         const { data } = await supabase.auth.getSession()
-        setUser(data.session?.user || null)
+        const sessionUser = data.session?.user ?? null
+        setUser(sessionUser)
+        if (sessionUser) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', sessionUser.id)
+            .single()
+          setAuthorName(profile?.full_name || sessionUser.email || 'Anonymous')
+        }
       } else {
         const mockUser = localStorage.getItem('civic_reporter_user')
         if (mockUser) {
-          setUser(JSON.parse(mockUser))
+          const parsed = JSON.parse(mockUser)
+          setUser(parsed)
+          setAuthorName(parsed.full_name || parsed.email || 'Anonymous')
         }
       }
     }
@@ -314,6 +327,15 @@ export default function ReportDetailPage() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Comment Section — full width below the evidence card */}
+        <div className="lg:col-span-8">
+          <CommentSection
+            reportId={id}
+            user={user}
+            authorName={authorName}
+          />
         </div>
 
         {/* Right Side: Map location & Upvotes panel */}
