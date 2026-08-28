@@ -282,3 +282,63 @@ create policy "Allow authenticated users to post comments"
 create policy "Allow users to delete their own comments"
   on public.report_comments for delete
   using (auth.uid() = user_id);
+
+-- 8. Web Push Subscriptions
+
+create table if not exists public.push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  endpoint text not null unique,
+  p256dh text not null,
+  auth text not null,
+  created_at timestamptz default now()
+);
+
+alter table public.push_subscriptions enable row level security;
+
+drop policy if exists "Allow users to manage their own push subscriptions" on public.push_subscriptions;
+drop policy if exists "Allow service role to read push subscriptions" on public.push_subscriptions;
+
+create policy "Allow users to manage their own push subscriptions"
+  on public.push_subscriptions for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+-- Service role needs to read all subscriptions to send push notifications
+create policy "Allow service role to read push subscriptions"
+  on public.push_subscriptions for select
+  to service_role
+  using (true);
+
+-- Allow service role to insert notifications (called from API routes, not just triggers)
+drop policy if exists "Allow service role to insert notifications" on public.notifications;
+create policy "Allow service role to insert notifications"
+  on public.notifications for insert
+  to service_role
+  with check (true);
+
+-- 9. Push Notification Setup Instructions
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Run sections 8 above in the Supabase SQL Editor.
+--
+-- Push notifications are dispatched from the Next.js API layer
+-- (app/api/reports/[id]/route.ts → app/api/push/send/route.ts) rather than
+-- from a Postgres trigger, because calling external HTTP endpoints from
+-- triggers requires the pg_net extension and additional Supabase config.
+--
+-- The existing handle_status_change_notification() trigger already writes
+-- the in-app notification row. The push is fired immediately after the
+-- PATCH update returns, giving the citizen a browser/device alert even
+-- when the web app is closed.
+--
+-- Required: add these three env vars to your Vercel / hosting dashboard:
+--   NEXT_PUBLIC_VAPID_PUBLIC_KEY=<from .env.local>
+--   VAPID_PRIVATE_KEY=<from .env.local>
+--   VAPID_MAILTO=mailto:admin@shehercare.app
+--   INTERNAL_API_SECRET=<any long random string — prevents external callers>
+--
+-- Also run this in the Supabase SQL Editor to enable Realtime on the
+-- notifications table (required for the live bell update in the Navbar):
+
+alter publication supabase_realtime add table public.notifications;
+alter publication supabase_realtime add table public.push_subscriptions;

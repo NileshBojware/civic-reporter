@@ -3,11 +3,12 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Shield, LogOut, MapPin, User, Menu, X, PlusCircle, Globe, ChevronDown, Bell } from 'lucide-react'
+import { Shield, LogOut, MapPin, User, Menu, X, PlusCircle, Globe, ChevronDown, Bell, ArrowRight } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import { useLanguage } from '@/lib/LanguageContext'
 import { LANGUAGES } from '@/lib/translations'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { usePushNotifications } from '@/lib/usePushNotifications'
 
 export function Navbar() {
   const pathname = usePathname()
@@ -24,6 +25,10 @@ export function Navbar() {
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
   const [queueCount, setQueueCount] = useState(0)
+
+  const userId = user?.id || profile?.id
+  // Push notifications — auto-subscribe when user is logged in
+  const { subscribe: subscribePush } = usePushNotifications(userId ?? null)
 
   // Listen to auth changes
   useEffect(() => {
@@ -135,15 +140,43 @@ export function Navbar() {
       return
     }
 
-    Promise.resolve().then(() => {
-      fetchNotifications(userId)
-    })
+    // Initial fetch
+    fetchNotifications(userId)
 
-    const interval = setInterval(() => {
-      fetchNotifications(userId)
-    }, 10000)
+    if (isSupabaseConfigured && supabase) {
+      // ── Supabase Realtime — live updates with no polling needed ──────────
+      const channel = supabase
+        .channel(`navbar-notifications:${userId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'notifications',
+            filter: `user_id=eq.${userId}`,
+          },
+          () => {
+            fetchNotifications(userId)
+          }
+        )
+        .subscribe()
 
-    return () => clearInterval(interval)
+      // Auto-subscribe to push after Supabase login (silent — only prompts
+      // if the user already granted permission previously)
+      if (typeof window !== 'undefined' && 'Notification' in window) {
+        if (Notification.permission === 'granted') {
+          subscribePush()
+        }
+      }
+
+      return () => {
+        supabase!.removeChannel(channel)
+      }
+    } else {
+      // ── Mock mode — 10s poll fallback ─────────────────────────────────────
+      const interval = setInterval(() => fetchNotifications(userId), 10000)
+      return () => clearInterval(interval)
+    }
   }, [user, profile])
 
   const handleMarkAsRead = async (notifId: string) => {
@@ -201,6 +234,7 @@ export function Navbar() {
     { href: '/reports', label: t('nav.allReports') },
     { href: '/report', label: t('nav.reportIssue'), icon: PlusCircle },
     { href: '/my-reports', label: t('nav.myReports'), citizenOnly: true },
+    { href: '/notifications', label: t('nav.notifications'), icon: Bell, citizenOnly: true },
     { href: '/admin', label: t('nav.adminDashboard'), adminOnly: true },
   ]
 
@@ -290,7 +324,14 @@ export function Navbar() {
                   />
                   <div className="absolute right-0 mt-2 w-80 rounded-lg bg-canvas border border-hairline p-3 shadow-xl z-50 animate-in fade-in slide-in-from-top-1 duration-200">
                     <div className="flex items-center justify-between pb-2 border-b border-hairline mb-2">
-                      <span className="text-title-sm font-bold text-ink">{t('nav.notifications')}</span>
+                      <span className="text-title-sm font-bold text-ink flex items-center gap-2">
+                        {t('nav.notifications')}
+                        {unreadCount > 0 && (
+                          <span className="inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full bg-error text-canvas text-[10px] font-bold">
+                            {unreadCount}
+                          </span>
+                        )}
+                      </span>
                       {unreadCount > 0 && (
                         <button
                           onClick={handleMarkAllAsRead}
@@ -307,7 +348,7 @@ export function Navbar() {
                           {t('nav.noNotifications')}
                         </div>
                       ) : (
-                        notifications.map((notif) => {
+                        notifications.slice(0, 6).map((notif) => {
                           const targetUrl = profile?.role === 'admin' 
                             ? `/admin/reports/${notif.report_id}`
                             : `/reports/${notif.report_id}`
@@ -341,6 +382,18 @@ export function Navbar() {
                           )
                         })
                       )}
+                    </div>
+
+                    {/* Footer: view all link */}
+                    <div className="mt-2 pt-2 border-t border-hairline">
+                      <Link
+                        href="/notifications"
+                        onClick={() => setNotificationsOpen(false)}
+                        className="flex items-center justify-center gap-1.5 w-full py-1.5 text-caption font-semibold text-brand-accent hover:underline"
+                      >
+                        {t('nav.viewAllNotifications')}
+                        <ArrowRight className="w-3 h-3" />
+                      </Link>
                     </div>
                   </div>
                 </>

@@ -207,3 +207,54 @@ self.addEventListener('message', async (event) => {
     event.source.postMessage({ type: 'QUEUE_COUNT', count })
   }
 })
+
+// ---------------------------------------------------------------------------
+// Push Notifications — receive payload sent by /api/push/send
+// ---------------------------------------------------------------------------
+self.addEventListener('push', (event) => {
+  if (!event.data) return
+
+  let payload
+  try {
+    payload = event.data.json()
+  } catch {
+    payload = { title: 'SheherCare', body: event.data.text() }
+  }
+
+  const title = payload.title || 'SheherCare'
+  const options = {
+    body: payload.body || '',
+    icon: payload.icon || '/manifest-icon-192.png',
+    badge: payload.badge || '/manifest-icon-96.png',
+    data: { url: payload.url || '/' },
+    vibrate: [200, 100, 200],
+    tag: 'shehercare-notification',   // replaces previous if not yet dismissed
+    renotify: true,
+  }
+
+  event.waitUntil(self.registration.showNotification(title, options))
+})
+
+// ---------------------------------------------------------------------------
+// Notification Click — open / focus the relevant report page
+// ---------------------------------------------------------------------------
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+
+  const targetUrl = event.notification.data?.url || '/'
+
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+      // If a tab is already open on the target URL, focus it
+      for (const client of clients) {
+        if (client.url.includes(targetUrl) && 'focus' in client) {
+          return client.focus()
+        }
+      }
+      // Otherwise open a new tab
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl)
+      }
+    })
+  )
+})
