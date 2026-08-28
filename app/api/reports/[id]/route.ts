@@ -2,6 +2,39 @@ import { NextRequest, NextResponse } from 'next/server'
 import { isSupabaseServerConfigured, supabaseServer } from '@/lib/supabaseServer'
 import { readMockDb, writeMockDb, Report } from '@/lib/mockDb'
 
+// Fire-and-forget helper — sends a push notification to a user after a
+// status change. We call our own /api/push/send internally so the logic
+// lives in one place and works even when the browser is closed.
+async function sendStatusPush(
+  baseUrl: string,
+  userId: string,
+  reportTitle: string,
+  newStatus: string,
+  reportId: string
+) {
+  try {
+    await fetch(`${baseUrl}/api/push/send`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-internal-secret': process.env.INTERNAL_API_SECRET || '',
+      },
+      body: JSON.stringify({
+        user_id: userId,
+        payload: {
+          title: 'Issue Status Updated — SheherCare',
+          body: `"${reportTitle}" is now ${newStatus.replace('_', ' ')}.`,
+          url: `/reports/${reportId}`,
+          icon: '/manifest-icon-192.png',
+          badge: '/manifest-icon-96.png',
+        },
+      }),
+    })
+  } catch {
+    // Non-critical — push failure must never break the main PATCH response
+  }
+}
+
 // GET /api/reports/[id] - Get single report details
 export async function GET(
   request: NextRequest,
@@ -77,6 +110,13 @@ export async function PATCH(
       if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 })
       }
+
+      // Fire push notification for the citizen when status changes
+      if (data.user_id && data.status !== body.previousStatus) {
+        const baseUrl = request.nextUrl.origin
+        sendStatusPush(baseUrl, data.user_id, data.title, data.status, data.id)
+      }
+
       return NextResponse.json(data)
     } else {
       // Mock mode
@@ -95,11 +135,9 @@ export async function PATCH(
       }
       db.reports[reportIndex] = updatedReport
 
-      // Trigger status change notification for citizen in mock mode
+      // Trigger status change notification + push for citizen in mock mode
       if (statusChanged && updatedReport.user_id) {
-        if (!db.notifications) {
-          db.notifications = []
-        }
+        if (!db.notifications) db.notifications = []
         db.notifications.push({
           id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
           user_id: updatedReport.user_id,
@@ -110,6 +148,9 @@ export async function PATCH(
           type: 'status_change',
           created_at: new Date().toISOString(),
         })
+        // Also fire push (works if the user is subscribed via the browser)
+        const baseUrl = request.nextUrl.origin
+        sendStatusPush(baseUrl, updatedReport.user_id, updatedReport.title, updatedReport.status, updatedReport.id)
       }
 
       writeMockDb(db)
