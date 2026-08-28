@@ -21,7 +21,7 @@ create table if not exists public.reports (
   longitude double precision not null,
   address text,
   image_url text,
-  status text not null default 'pending' check (status in ('pending','in_progress','resolved','rejected')),
+  status text not null default 'pending' check (status in ('pending','verified','in_progress','resolved','rejected')),
   rejection_reason text,
   resolved_image_url text,
   resolved_note text,
