@@ -141,7 +141,9 @@ export function Navbar() {
     }
 
     // Initial fetch
-    fetchNotifications(userId)
+    Promise.resolve().then(() => {
+      fetchNotifications(userId)
+    })
 
     if (isSupabaseConfigured && supabase) {
       // ── Supabase Realtime — live updates with no polling needed ──────────

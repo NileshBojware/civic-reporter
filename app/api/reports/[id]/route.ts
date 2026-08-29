@@ -100,6 +100,17 @@ export async function PATCH(
     }
 
     if (isSupabaseServerConfigured && supabaseServer) {
+      // Fetch the existing report first to check if status actually changes
+      const { data: existingReport, error: fetchError } = await supabaseServer
+        .from('reports')
+        .select('status')
+        .eq('id', id)
+        .single()
+
+      if (fetchError) {
+        return NextResponse.json({ error: 'Report not found' }, { status: 404 })
+      }
+
       const { data, error } = await supabaseServer
         .from('reports')
         .update(updates)
@@ -112,7 +123,8 @@ export async function PATCH(
       }
 
       // Fire push notification for the citizen when status changes
-      if (data.user_id && data.status !== body.previousStatus) {
+      const statusChanged = existingReport.status !== data.status
+      if (data.user_id && statusChanged) {
         const baseUrl = request.nextUrl.origin
         sendStatusPush(baseUrl, data.user_id, data.title, data.status, data.id)
       }

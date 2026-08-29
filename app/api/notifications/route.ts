@@ -12,6 +12,11 @@ export async function GET(request: NextRequest) {
   }
 
   if (isSupabaseServerConfigured && supabaseServer) {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(userId)) {
+      return NextResponse.json([])
+    }
+
     const { data, error } = await supabaseServer
       .from('notifications')
       .select('*')
@@ -44,6 +49,11 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (isSupabaseServerConfigured && supabaseServer) {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(user_id)) {
+        return NextResponse.json({ error: 'Invalid user_id format' }, { status: 400 })
+      }
+
       let query = supabaseServer.from('notifications').update({ is_read: true }).eq('user_id', user_id)
 
       if (!mark_all_read && notification_id) {

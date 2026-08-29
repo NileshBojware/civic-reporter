@@ -100,7 +100,7 @@ function parseEXIFSegment(view: DataView, offset: number, length: number): GPSCo
   const gpsIfdStart = tiffStart + gpsInfoOffset
   if (gpsIfdStart + 2 > view.byteLength) return null
   const numGpsEntries = view.getUint16(gpsIfdStart, littleEndian)
-  let gpsOffset = gpsIfdStart + 2
+  const gpsOffset = gpsIfdStart + 2
 
   let latRef = ''
   let latVal: number[] = []
@@ -112,7 +112,6 @@ function parseEXIFSegment(view: DataView, offset: number, length: number): GPSCo
     if (entryOffset + 12 > view.byteLength) break
     
     const tag = view.getUint16(entryOffset, littleEndian)
-    const type = view.getUint16(entryOffset + 2, littleEndian)
     const count = view.getUint32(entryOffset + 4, littleEndian)
     const valueOffset = view.getUint32(entryOffset + 8, littleEndian)
 

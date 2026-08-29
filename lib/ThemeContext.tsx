@@ -15,19 +15,14 @@ const ThemeContext = createContext<ThemeContextValue>({
 })
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>('light')
+  const [theme, setTheme] = useState<Theme>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('shehercare-theme') as Theme | null
+      return saved ?? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+    }
+    return 'light'
+  })
   const [mounted, setMounted] = useState(false)
-
-  // On mount: read saved preference, fall back to OS preference
-  useEffect(() => {
-    const saved = localStorage.getItem('shehercare-theme') as Theme | null
-    const preferred =
-      saved ??
-      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-    setTheme(preferred)
-    applyTheme(preferred)
-    setMounted(true)
-  }, [])
 
   const applyTheme = (next: Theme) => {
     const root = document.documentElement
@@ -37,6 +32,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       root.classList.remove('dark')
     }
   }
+
+  // On mount: apply the theme to documentElement and flag mounted state
+  useEffect(() => {
+    applyTheme(theme)
+    const timer = setTimeout(() => {
+      setMounted(true)
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [theme])
 
   const toggleTheme = () => {
     setTheme((prev) => {
