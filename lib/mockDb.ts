@@ -176,7 +176,7 @@ export function readMockDb(): MockData {
       ...parsed,
       comments: parsed.comments ?? defaultData.comments,
     }
-  } catch (e) {
+  } catch {
     return defaultData
   }
 }

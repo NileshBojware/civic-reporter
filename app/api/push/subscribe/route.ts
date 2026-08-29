@@ -13,6 +13,11 @@ export async function POST(request: NextRequest) {
     }
 
     if (isSupabaseServerConfigured && supabaseServer) {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(user_id)) {
+        return NextResponse.json({ error: 'Invalid user_id format' }, { status: 400 })
+      }
+
       // Upsert so re-subscribing (e.g. after permission grant) just refreshes the keys
       const { error } = await supabaseServer
         .from('push_subscriptions')
@@ -47,6 +52,11 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (isSupabaseServerConfigured && supabaseServer) {
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(user_id)) {
+        return NextResponse.json({ error: 'Invalid user_id format' }, { status: 400 })
+      }
+
       const { error } = await supabaseServer
         .from('push_subscriptions')
         .delete()

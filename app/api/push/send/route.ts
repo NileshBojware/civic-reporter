@@ -25,7 +25,11 @@ export interface PushPayload {
 export async function POST(request: NextRequest) {
   // Verify the call is coming from our own server (internal secret header)
   const secret = request.headers.get('x-internal-secret')
-  if (secret !== process.env.INTERNAL_API_SECRET && process.env.NODE_ENV === 'production') {
+  if (
+    process.env.INTERNAL_API_SECRET &&
+    secret !== process.env.INTERNAL_API_SECRET &&
+    process.env.NODE_ENV === 'production'
+  ) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 

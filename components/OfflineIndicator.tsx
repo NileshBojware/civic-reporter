@@ -16,14 +16,16 @@ import { WifiOff, RefreshCw, CheckCircle2 } from 'lucide-react'
  * and no queue — it never occupies layout space when inactive.
  */
 export function OfflineIndicator() {
-  const [isOnline, setIsOnline] = useState(true)
+  const [isOnline, setIsOnline] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return navigator.onLine
+    }
+    return true
+  })
   const [queueCount, setQueueCount] = useState(0)
   const [showSyncToast, setShowSyncToast] = useState(false)
 
   useEffect(() => {
-    // Initialise from current browser state
-    setIsOnline(navigator.onLine)
-
     const handleOnline = () => setIsOnline(true)
     const handleOffline = () => setIsOnline(false)
 
@@ -69,7 +71,7 @@ export function OfflineIndicator() {
           className="fixed top-16 left-0 right-0 z-40 flex items-center justify-center gap-2.5 px-4 py-2.5 bg-warning/10 border-b border-warning/25 text-warning text-caption font-semibold"
         >
           <WifiOff className="w-3.5 h-3.5 shrink-0" />
-          <span>You're offline — reports will be saved and sent when you reconnect.</span>
+          <span>{"You're offline — reports will be saved and sent when you reconnect."}</span>
 
           {queueCount > 0 && (
             <span className="inline-flex items-center gap-1 ml-1 px-2 py-0.5 rounded-pill bg-warning text-canvas text-[10px] font-bold shrink-0">
