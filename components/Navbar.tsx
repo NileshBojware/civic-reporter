@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Shield, LogOut, MapPin, User, Menu, X, PlusCircle, Globe, ChevronDown, Bell, ArrowRight } from 'lucide-react'
+import { Shield, LogOut, MapPin, User, Menu, X, PlusCircle, Globe, ChevronDown, Bell, ArrowRight, FileText, ClipboardList } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import { useLanguage } from '@/lib/LanguageContext'
 import { LANGUAGES } from '@/lib/translations'
@@ -233,16 +233,15 @@ export function Navbar() {
   }
 
   const navLinks = [
-    { href: '/reports', label: t('nav.allReports') },
+    { href: '/reports', label: t('nav.allReports'), icon: FileText },
     { href: '/report', label: t('nav.reportIssue'), icon: PlusCircle },
-    { href: '/my-reports', label: t('nav.myReports'), citizenOnly: true },
-    { href: '/notifications', label: t('nav.notifications'), icon: Bell, citizenOnly: true },
-    { href: '/admin', label: t('nav.adminDashboard'), adminOnly: true },
+    { href: '/my-reports', label: t('nav.myReports'), icon: ClipboardList },
+    { href: '/notifications', label: t('nav.notifications'), icon: Bell },
+    { href: '/admin', label: t('nav.adminDashboard'), icon: Shield, adminOnly: true },
   ]
 
   const filteredLinks = navLinks.filter((link) => {
     if (link.adminOnly && profile?.role !== 'admin') return false
-    if (link.citizenOnly && !user) return false
     return true
   })
 
@@ -258,38 +257,45 @@ export function Navbar() {
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-hairline bg-canvas/90 backdrop-blur-md">
-      <div className="container mx-auto px-4 md:px-6 h-16 flex items-center justify-between max-w-[1200px]">
+    <header className="sticky top-0 z-50 w-full border-b border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-[#070a12]/95 backdrop-blur-md">
+      <div className="container mx-auto px-4 md:px-6 h-16 flex items-center justify-between max-w-[1240px]">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group shrink-0">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-on-primary font-bold transition-transform duration-300">
-            <MapPin className="w-5 h-5" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold transition-transform duration-300">
+            <MapPin className="w-5 h-5 text-white dark:text-slate-900" />
           </div>
-          <span className="font-display text-title-md font-extrabold text-ink tracking-tight">
-            Sheher<span className="text-brand-accent">Care</span>
+          <span className="font-display text-title-md font-black text-slate-900 dark:text-white tracking-tight">
+            Sheher<span className="text-blue-600 dark:text-blue-400">Care</span>
           </span>
         </Link>
 
         {/* Desktop Nav Links */}
-        <nav className="hidden md:flex items-center gap-6">
+        <nav className="hidden md:flex items-center gap-1.5 lg:gap-3">
           {filteredLinks.map((link) => {
             const isActive = pathname === link.href
             const isReportLink = link.href === '/report'
+            const isNotifLink = link.href === '/notifications'
             return (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`text-nav-link font-medium transition-colors duration-200 flex items-center gap-1.5 relative ${
-                  isActive ? 'text-primary font-semibold underline underline-offset-4' : 'text-muted hover:text-ink'
+                className={`text-body-sm font-semibold transition-all duration-200 flex items-center gap-1.5 px-3 py-1.5 rounded-lg relative ${
+                  isActive 
+                    ? 'text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/40 border-b-2 border-blue-600 dark:border-blue-400' 
+                    : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50'
                 }`}
               >
-                {link.icon && <link.icon className="w-4 h-4 text-brand-accent" />}
+                {link.icon && <link.icon className={`w-4 h-4 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-400'}`} />}
                 <span>{link.label}</span>
+                {/* Notifications unread indicator dot */}
+                {isNotifLink && unreadCount > 0 && (
+                  <span className="flex h-2 w-2 rounded-full bg-red-500 animate-pulse ml-0.5" />
+                )}
                 {/* Queued-report sync badge — only on Report Issue link */}
                 {isReportLink && queueCount > 0 && (
                   <span
                     title={`${queueCount} report${queueCount !== 1 ? 's' : ''} queued offline`}
-                    className="absolute -top-1.5 -right-3 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-warning text-canvas text-[9px] font-bold px-1 leading-none"
+                    className="absolute -top-1.5 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-amber-500 text-white text-[9px] font-bold px-1 leading-none"
                   >
                     {queueCount}
                   </span>
