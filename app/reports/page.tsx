@@ -64,6 +64,19 @@ export default function ReportsPage() {
   }
 
   useEffect(() => {
+    // Read query parameters from URL (e.g. ?status=pending)
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const statusParam = params.get('status')
+      const catParam = params.get('category')
+      if (statusParam && STATUSES.some((s) => s.value === statusParam)) {
+        setSelectedStatus(statusParam)
+      }
+      if (catParam && CATEGORIES.some((c) => c.value === catParam)) {
+        setSelectedCategory(catParam)
+      }
+    }
+
     fetchReports()
 
     const checkUser = async () => {

@@ -1,24 +1,26 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
-  --color-primary: #111111;
-  --color-primary-active: #242424;
-  --color-primary-disabled: #e5e7eb;
-  --color-ink: #111111;
-  --color-body: #374151;
-  --color-muted: #6b7280;
-  --color-muted-soft: #898989;
-  --color-hairline: #e5e7eb;
-  --color-hairline-soft: #f3f4f6;
+  --color-primary: #0f172a;
+  --color-primary-active: #1e293b;
+  --color-primary-disabled: #e2e8f0;
+  --color-ink: #0f172a;
+  --color-body: #475569;
+  --color-muted: #64748b;
+  --color-muted-soft: #94a3b8;
+  --color-hairline: #e2e8f0;
+  --color-hairline-soft: #f1f5f9;
   --color-canvas: #ffffff;
-  --color-surface-soft: #f8f9fa;
-  --color-surface-card: #f5f5f5;
-  --color-surface-strong: #e5e7eb;
-  --color-surface-dark: #101828;
-  --color-surface-dark-elevated: #1a2333;
+  --color-surface-soft: #f8fafc;
+  --color-surface-card: #ffffff;
+  --color-surface-strong: #f1f5f9;
+  --color-surface-dark: #070a12;
+  --color-surface-dark-elevated: #0c1222;
   --color-on-primary: #ffffff;
   --color-on-dark: #ffffff;
-  --color-on-dark-soft: #a1a9b8;
+  --color-on-dark-soft: #94a3b8;
   --color-brand-accent: #2563eb;
   
   --color-status-reported: #f59e0b;
@@ -51,57 +53,57 @@
 
 :root {
   --background: #ffffff;
-  --foreground: #111111;
-  --grid-color: rgba(17, 17, 17, 0.03);
-  --glass-bg: rgba(255, 255, 255, 0.8);
-  --glass-border: rgba(17, 17, 17, 0.08);
+  --foreground: #0f172a;
+  --grid-color: rgba(15, 23, 42, 0.025);
+  --glass-bg: rgba(255, 255, 255, 0.92);
+  --glass-border: rgba(15, 23, 42, 0.08);
 
   --popup-bg: rgba(255, 255, 255, 0.98);
-  --popup-border: #e5e7eb;
-  --popup-text: #111111;
+  --popup-border: #e2e8f0;
+  --popup-text: #0f172a;
 }
 
 /* ─── Dark mode overrides ─────────────────────────────────────────────────── */
 /* Applied when the <html> element carries the `dark` class.                   */
 .dark {
-  --background: #0f1117;
-  --foreground: #f0f2f5;
-  --grid-color: rgba(255, 255, 255, 0.025);
-  --glass-bg: rgba(15, 17, 23, 0.85);
+  --background: #070a12;
+  --foreground: #f8fafc;
+  --grid-color: rgba(255, 255, 255, 0.02);
+  --glass-bg: rgba(12, 18, 34, 0.9);
   --glass-border: rgba(255, 255, 255, 0.08);
 
-  --popup-bg: rgba(26, 29, 40, 0.98);
-  --popup-border: #2d3148;
-  --popup-text: #f0f2f5;
+  --popup-bg: rgba(12, 18, 34, 0.98);
+  --popup-border: #1e293b;
+  --popup-text: #f8fafc;
 
   /* Neutral surface palette */
-  --color-canvas: #0f1117;
-  --color-surface-soft: #161923;
-  --color-surface-card: #1a1d2b;
-  --color-surface-strong: #252837;
-  --color-surface-dark: #060810;
-  --color-surface-dark-elevated: #0d1021;
+  --color-canvas: #070a12;
+  --color-surface-soft: #0b1120;
+  --color-surface-card: #0c1222;
+  --color-surface-strong: #161f36;
+  --color-surface-dark: #04060c;
+  --color-surface-dark-elevated: #0c1222;
 
   /* Text palette */
-  --color-ink: #f0f2f5;
-  --color-body: #b0b8c8;
-  --color-muted: #6b7a99;
-  --color-muted-soft: #5a6478;
+  --color-ink: #f8fafc;
+  --color-body: #94a3b8;
+  --color-muted: #64748b;
+  --color-muted-soft: #475569;
 
   /* Borders */
-  --color-hairline: #252837;
-  --color-hairline-soft: #1e2130;
+  --color-hairline: #1e293b;
+  --color-hairline-soft: #141c2e;
 
-  /* Primary action — keep brand blue, lighten slightly for contrast */
-  --color-primary: #e8eaf0;
+  /* Primary action */
+  --color-primary: #f8fafc;
   --color-primary-active: #ffffff;
-  --color-primary-disabled: #252837;
-  --color-on-primary: #0f1117;
+  --color-primary-disabled: #1e293b;
+  --color-on-primary: #070a12;
 
-  /* Brand accent stays blue — slightly lighter for dark bg readability */
-  --color-brand-accent: #4b8ef7;
+  /* Brand accent stays blue */
+  --color-brand-accent: #3b82f6;
 
-  /* Status colours — same hue, slightly brighter for dark bg */
+  /* Status colours */
   --color-status-reported: #fbbf24;
   --color-status-verified: #60a5fa;
   --color-status-inprogress: #a78bfa;
@@ -133,6 +135,33 @@ body {
   background: var(--glass-bg);
   backdrop-filter: blur(12px);
   border: 1px solid var(--glass-border);
+}
+
+/* Panoramic background slow sliding animation */
+@keyframes heroPanoramaPan {
+  0% {
+    background-position: 0% 32%;
+  }
+  50% {
+    background-position: 100% 32%;
+  }
+  100% {
+    background-position: 0% 32%;
+  }
+}
+
+.animate-panorama-slow {
+  background-size: 160% auto;
+  background-repeat: no-repeat;
+  animation: heroPanoramaPan 50s ease-in-out infinite;
+  will-change: background-position;
+}
+
+@media (max-width: 768px) {
+  .animate-panorama-slow {
+    background-size: 260% auto;
+    animation-duration: 40s;
+  }
 }
 
 /* Custom scrollbar matching design.md */

@@ -72,9 +72,9 @@ export function ReportCard({ report, onUpvote, isUpvoted = false }: ReportCardPr
   }
 
   return (
-    <div className="group flex flex-col sm:flex-row gap-5 p-6 bg-canvas border border-hairline rounded-lg hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition-all duration-200 relative">
+    <div className="group flex flex-col sm:flex-row gap-5 p-6 bg-white dark:bg-[#0c1222] border border-slate-200/90 dark:border-slate-800 rounded-2xl hover:shadow-lg transition-all duration-200 relative">
       {/* Left: Fixed aspect ratio image thumbnail */}
-      <div className="w-full sm:w-36 h-28 shrink-0 overflow-hidden rounded-md border border-hairline bg-surface-card relative">
+      <div className="w-full sm:w-36 h-28 shrink-0 overflow-hidden rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 relative">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={report.image_url || 'https://images.unsplash.com/photo-1584824486509-112e4181ff6b?auto=format&fit=crop&w=800&q=80'}
@@ -89,19 +89,19 @@ export function ReportCard({ report, onUpvote, isUpvoted = false }: ReportCardPr
         <div>
           {/* Header row: Title */}
           <div className="flex items-start justify-between gap-4 mb-1">
-            <h3 className="text-title-md font-bold text-ink group-hover:text-primary transition-colors leading-snug line-clamp-1">
+            <h3 className="text-title-md font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug line-clamp-1">
               {report.title}
             </h3>
           </div>
 
           {/* Subheader: location and timestamp */}
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-muted mb-2">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-slate-500 dark:text-slate-400 mb-2">
             <div className="flex items-center gap-1 min-w-0">
-              <MapPin className="w-3.5 h-3.5 text-brand-accent shrink-0" />
+              <MapPin className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
               <span className="truncate">{report.address}</span>
             </div>
             <div className="flex items-center gap-1 shrink-0">
-              <Calendar className="w-3.5 h-3.5 text-muted shrink-0" />
+              <Calendar className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
               <span>{t('card.reportedOn')} {formattedDate}</span>
             </div>
           </div>
@@ -115,36 +115,36 @@ export function ReportCard({ report, onUpvote, isUpvoted = false }: ReportCardPr
           </div>
 
           {/* Description truncated to 2 lines */}
-          <p className="text-body-md text-body line-clamp-2 leading-relaxed mb-4">
+          <p className="text-body-md text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed mb-4">
             {report.description}
           </p>
         </div>
 
         {/* Footer actions */}
-        <div className="flex items-center justify-between gap-4 pt-3 border-t border-hairline-soft mt-auto">
+        <div className="flex items-center justify-between gap-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 mt-auto">
           {onUpvote ? (
             <button
               onClick={handleUpvote}
               disabled={loading}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-pill text-caption font-semibold border transition-all duration-150 cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-caption font-semibold border transition-all duration-150 cursor-pointer ${
                 upvoted
-                  ? 'bg-brand-accent/10 text-brand-accent border-brand-accent/20 hover:bg-brand-accent/15'
-                  : 'bg-surface-card text-body border-hairline hover:bg-surface-strong hover:text-ink'
+                  ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-900/60'
+                  : 'bg-slate-50 dark:bg-[#151f38] text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-[#1c2a4c]'
               }`}
             >
-              <ThumbsUp className={`w-3.5 h-3.5 ${upvoted ? 'fill-brand-accent text-brand-accent' : ''} ${loading ? 'animate-pulse' : ''}`} />
+              <ThumbsUp className={`w-3.5 h-3.5 ${upvoted ? 'fill-blue-600 text-blue-600 dark:fill-blue-400 dark:text-blue-400' : ''} ${loading ? 'animate-pulse' : ''}`} />
               <span>{upvoteCount} {t('card.upvotes')}</span>
             </button>
           ) : (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-pill bg-surface-card border border-hairline text-caption text-body font-semibold">
-              <ThumbsUp className="w-3.5 h-3.5 text-muted" />
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 dark:bg-[#151f38] border border-slate-200 dark:border-slate-700 text-caption text-slate-700 dark:text-slate-200 font-semibold">
+              <ThumbsUp className="w-3.5 h-3.5 text-slate-400" />
               <span>{upvoteCount} {t('card.upvotes')}</span>
             </div>
           )}
 
           <Link
             href={`/reports/${report.id}`}
-            className="inline-flex items-center gap-1 text-caption font-semibold text-ink hover:underline group/link"
+            className="inline-flex items-center gap-1 text-caption font-semibold text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 group/link"
           >
             <span>{t('card.details')}</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover/link:translate-x-1 transition-transform" />

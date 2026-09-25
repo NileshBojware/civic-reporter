@@ -61,7 +61,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 export default function MapOverview({
   reports,
-  center = [12.9716, 77.5946], // Default Bangalore center
+  center = [19.8762, 75.3433], // Default Maharashtra, Chhatrapati Sambhaji Nagar center
   zoom = 13,
 }: MapOverviewProps) {
   const [mounted, setMounted] = useState(false)
@@ -83,9 +83,9 @@ export default function MapOverview({
     (r) => typeof r.latitude === 'number' && typeof r.longitude === 'number'
   )
 
-  // Determine center based on first report if present, else fallback
+  // Determine center based on single report or default center
   const mapCenter: [number, number] =
-    validReports.length > 0
+    validReports.length === 1
       ? [validReports[0].latitude, validReports[0].longitude]
       : center
 
@@ -97,10 +97,11 @@ export default function MapOverview({
         scrollWheelZoom={true}
         className="w-full h-full z-0"
       >
-        {/* Light canvas tile layer matching design system */}
+        {/* Free standard OpenStreetMap tile layer (no API key required) */}
         <TileLayer
-          attribution='&copy; <a href="https://carto.com/attributions">CARTO</a> contributors'
-          url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          maxZoom={19}
         />
         {validReports.map((report) => (
           <Marker

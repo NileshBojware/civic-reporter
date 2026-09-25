@@ -41,8 +41,8 @@ export default function ReportPage() {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [category, setCategory] = useState('road_damage')
-  const [latitude, setLatitude] = useState(12.9716) // Default Bangalore
-  const [longitude, setLongitude] = useState(77.5946)
+  const [latitude, setLatitude] = useState(19.8762) // Default Chhatrapati Sambhaji Nagar, Maharashtra
+  const [longitude, setLongitude] = useState(75.3433)
   const [address, setAddress] = useState('')
   const [photo, setPhoto] = useState<File | null>(null)
   const [photoUrl, setPhotoUrl] = useState('')
