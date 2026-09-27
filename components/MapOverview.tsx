@@ -72,7 +72,7 @@ export default function MapOverview({
 
   if (!mounted) {
     return (
-      <div className="w-full h-full min-h-[400px] rounded-lg bg-surface-card border border-hairline animate-pulse flex items-center justify-center">
+      <div className="w-full h-full min-h-[280px] sm:min-h-[350px] md:min-h-[400px] rounded-lg bg-surface-card border border-hairline animate-pulse flex items-center justify-center">
         <span className="text-muted text-body-sm">Loading Live Map...</span>
       </div>
     )
@@ -90,7 +90,7 @@ export default function MapOverview({
       : center
 
   return (
-    <div className="relative w-full h-full min-h-[400px] rounded-lg overflow-hidden border border-hairline shadow-sm">
+    <div className="relative w-full h-full min-h-[280px] sm:min-h-[350px] md:min-h-[400px] rounded-lg overflow-hidden border border-hairline shadow-sm">
       <MapContainer
         center={mapCenter}
         zoom={zoom}
