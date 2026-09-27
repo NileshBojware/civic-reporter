@@ -157,10 +157,70 @@ body {
   will-change: background-position;
 }
 
-@media (max-width: 768px) {
-  .animate-panorama-slow {
-    background-size: 260% auto;
-    animation-duration: 40s;
+/* Mobile and Tablet Background Slow Sliding Pan Animation */
+@keyframes heroMobilePan {
+  0% {
+    background-position: 0% 52%;
+  }
+  50% {
+    background-position: 100% 52%;
+  }
+  100% {
+    background-position: 0% 52%;
+  }
+}
+
+/* Mobile and Tablet Background Layers (viewport <= 1024px) */
+@media (max-width: 1024px) {
+  .hero-mobile-bg-light {
+    display: block !important;
+    background-image: url('/images/hero-bg-mobile.jpg');
+    background-size: 160% auto;
+    background-repeat: no-repeat;
+    animation: heroMobilePan 40s ease-in-out infinite;
+    will-change: background-position;
+  }
+  .hero-mobile-bg-dark {
+    display: block !important;
+    background-image: url('/images/hero-bg-mobile-dark.jpg');
+    background-size: 160% auto;
+    background-repeat: no-repeat;
+    animation: heroMobilePan 40s ease-in-out infinite;
+    will-change: background-position;
+  }
+  .hero-desktop-bg {
+    display: none !important;
+  }
+  .hero-desktop-overlay {
+    display: none !important;
+  }
+  .hero-mobile-overlay {
+    display: block !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-mobile-bg-light,
+  .hero-mobile-bg-dark {
+    background-size: 190% auto;
+    animation-duration: 35s;
+  }
+}
+
+/* Desktop and Laptop Background Layers (viewport > 1024px) */
+@media (min-width: 1025px) {
+  .hero-mobile-bg-light,
+  .hero-mobile-bg-dark {
+    display: none !important;
+  }
+  .hero-mobile-overlay {
+    display: none !important;
+  }
+  .hero-desktop-bg {
+    display: block !important;
+  }
+  .hero-desktop-overlay {
+    display: block !important;
   }
 }
 

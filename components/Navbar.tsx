@@ -258,13 +258,13 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-[#070a12]/95 backdrop-blur-md">
-      <div className="container mx-auto px-4 md:px-6 h-16 flex items-center justify-between max-w-[1240px]">
+      <div className="container mx-auto px-3 sm:px-4 md:px-6 h-16 flex items-center justify-between max-w-[1240px]">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2 group shrink-0">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold transition-transform duration-300">
-            <MapPin className="w-5 h-5 text-white dark:text-slate-900" />
+          <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold transition-transform duration-300">
+            <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-white dark:text-slate-900" />
           </div>
-          <span className="font-display text-title-md font-black text-slate-900 dark:text-white tracking-tight">
+          <span className="font-display text-base sm:text-title-md font-black text-slate-900 dark:text-white tracking-tight">
             Sheher<span className="text-blue-600 dark:text-blue-400">Care</span>
           </span>
         </Link>
@@ -306,13 +306,13 @@ export function Navbar() {
         </nav>
 
         {/* Right side container */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           {/* Notifications Bell */}
           {user && (
             <div className="relative">
               <button
                 onClick={() => setNotificationsOpen(!notificationsOpen)}
-                className="relative flex items-center justify-center p-2 rounded-full hover:bg-surface-soft text-muted hover:text-ink border border-hairline transition-all focus:outline-none cursor-pointer"
+                className="relative flex items-center justify-center p-1.5 sm:p-2 rounded-full hover:bg-surface-soft text-muted hover:text-ink border border-hairline transition-all focus:outline-none cursor-pointer"
                 title={t('nav.notifications')}
               >
                 <Bell className="w-4 h-4" />
@@ -416,11 +416,11 @@ export function Navbar() {
           <div className="relative">
             <button
               onClick={() => setLangDropdownOpen(!langDropdownOpen)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-canvas border border-hairline text-body hover:text-ink text-body-sm font-semibold transition-all focus:outline-none cursor-pointer"
+              className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-full bg-canvas border border-hairline text-body hover:text-ink text-xs sm:text-body-sm font-semibold transition-all focus:outline-none cursor-pointer"
             >
-              <Globe className="w-3.5 h-3.5 text-muted" />
-              <span>{selectedLang.nativeLabel}</span>
-              <ChevronDown className={`w-3 h-3 transition-transform duration-200 ${langDropdownOpen ? 'rotate-180' : ''}`} />
+              <Globe className="w-3.5 h-3.5 text-muted shrink-0" />
+              <span className="truncate max-w-[60px] sm:max-w-none">{selectedLang.nativeLabel}</span>
+              <ChevronDown className={`w-3 h-3 transition-transform duration-200 shrink-0 ${langDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {langDropdownOpen && (
@@ -502,7 +502,7 @@ export function Navbar() {
           {/* Mobile Menu Toggle */}
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 -mr-2 text-muted hover:text-ink md:hidden transition cursor-pointer"
+            className="p-1.5 sm:p-2 -mr-1 sm:-mr-2 text-muted hover:text-ink md:hidden transition cursor-pointer"
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
