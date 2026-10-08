@@ -8,6 +8,8 @@ export interface Profile {
   id: string
   full_name: string
   role: 'citizen' | 'admin'
+  department?: string
+  email?: string
   created_at: string
 }
 
@@ -16,7 +18,26 @@ export interface Report {
   user_id: string | null
   title: string
   description: string
-  category: 'road_damage' | 'garbage' | 'water_leakage' | 'drainage' | 'streetlight' | 'other'
+  category:
+    | 'roads_transport'
+    | 'water_supply'
+    | 'drainage_sewerage'
+    | 'waste_management'
+    | 'street_lighting'
+    | 'sanitation_health'
+    | 'parks_spaces'
+    | 'traffic_parking'
+    | 'electricity_utilities'
+    | 'encroachment_construction'
+    | 'public_infrastructure'
+    | 'other_civic'
+    | 'road_damage'
+    | 'garbage'
+    | 'water_leakage'
+    | 'drainage'
+    | 'streetlight'
+    | 'other'
+    | string
   latitude: number
   longitude: number
   address: string
@@ -66,15 +87,90 @@ interface MockData {
 const defaultData: MockData = {
   profiles: [
     {
-      id: 'admin-id-123',
-      full_name: 'Municipal Admin',
+      id: 'admin-pwd',
+      full_name: 'Public Works / Engineering Admin',
       role: 'admin',
+      department: 'pwd',
+      email: 'admin.pwd@shehercare.in',
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 'admin-electrical',
+      full_name: 'Electrical Department Admin',
+      role: 'admin',
+      department: 'electrical',
+      email: 'admin.electrical@shehercare.in',
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 'admin-health',
+      full_name: 'Public Health Department Admin',
+      role: 'admin',
+      department: 'health',
+      email: 'admin.health@shehercare.in',
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 'admin-water',
+      full_name: 'Water Supply Department Admin',
+      role: 'admin',
+      department: 'water',
+      email: 'admin.water@shehercare.in',
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 'admin-sewerage',
+      full_name: 'Sewerage & Drainage Department Admin',
+      role: 'admin',
+      department: 'sewerage',
+      email: 'admin.sewerage@shehercare.in',
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 'admin-solidwaste',
+      full_name: 'Solid Waste Management Department Admin',
+      role: 'admin',
+      department: 'solidwaste',
+      email: 'admin.solidwaste@shehercare.in',
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 'admin-gardens',
+      full_name: 'Garden & Parks Department Admin',
+      role: 'admin',
+      department: 'gardens',
+      email: 'admin.gardens@shehercare.in',
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 'admin-townplanning',
+      full_name: 'Town Planning / Encroachment Admin',
+      role: 'admin',
+      department: 'townplanning',
+      email: 'admin.townplanning@shehercare.in',
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 'admin-traffic',
+      full_name: 'Traffic Department Admin',
+      role: 'admin',
+      department: 'traffic',
+      email: 'admin.traffic@shehercare.in',
+      created_at: new Date().toISOString()
+    },
+    {
+      id: 'admin-grievance',
+      full_name: 'General Administration / Grievance Cell Admin',
+      role: 'admin',
+      department: 'grievance',
+      email: 'admin.grievance@shehercare.in',
       created_at: new Date().toISOString()
     },
     {
       id: 'citizen-id-123',
       full_name: 'John Citizen',
       role: 'citizen',
+      email: 'citizen@shehercare.in',
       created_at: new Date().toISOString()
     }
   ],

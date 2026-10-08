@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { MapPin, ThumbsUp, Calendar, ArrowRight } from 'lucide-react'
 import { StatusBadge } from './StatusBadge'
 import { useLanguage } from '@/lib/LanguageContext'
+import { getCategoryStyles } from '@/lib/categories'
 
 interface Report {
   id: string
@@ -52,24 +53,6 @@ export function ReportCard({ report, onUpvote, isUpvoted = false }: ReportCardPr
     day: 'numeric',
     year: 'numeric',
   })
-
-  // Map category to design system color styles
-  const getCategoryStyles = (category: string) => {
-    switch (category) {
-      case 'garbage':
-        return 'text-category-waste bg-category-waste/10 border-category-waste/20'
-      case 'water_leakage':
-        return 'text-category-water bg-category-water/10 border-category-water/20'
-      case 'drainage':
-        return 'text-category-drainage bg-category-drainage/10 border-category-drainage/20'
-      case 'road_damage':
-        return 'text-category-waste bg-category-waste/10 border-category-waste/20'
-      case 'streetlight':
-        return 'text-category-water bg-category-water/10 border-category-water/20'
-      default:
-        return 'text-muted bg-surface-card border-hairline'
-    }
-  }
 
   return (
     <div className="group flex flex-col sm:flex-row gap-5 p-6 bg-white dark:bg-[#0c1222] border border-slate-200/90 dark:border-slate-800 rounded-2xl hover:shadow-lg transition-all duration-200 relative">

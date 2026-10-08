@@ -3,9 +3,9 @@
 import React, { useEffect, useState } from 'react'
 import L from 'leaflet'
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
-import 'leaflet/dist/leaflet.css'
 import Link from 'next/link'
 import { StatusBadge } from './StatusBadge'
+import { getCategoryFormattedLabel } from '@/lib/categories'
 
 interface Report {
   id: string
@@ -50,14 +50,7 @@ const getCustomIcon = (status: Report['status']) => {
   })
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  road_damage:   '🛣️ Road Damage',
-  garbage:       '🗑️ Garbage Pile',
-  water_leakage: '💧 Water Leakage',
-  drainage:      '🌊 Waterlogging / Drainage',
-  streetlight:   '💡 Streetlight Issue',
-  other:         '📌 Other Civic Issue',
-}
+
 
 export default function MapOverview({
   reports,
@@ -113,7 +106,7 @@ export default function MapOverview({
               {/* Popup uses design-system text colors — white background is set by leaflet CSS overrides */}
               <div className="p-1 min-w-[200px]">
                 <span className="text-[10px] uppercase font-bold text-muted block mb-1">
-                  {CATEGORY_LABELS[report.category] || report.category}
+                  {getCategoryFormattedLabel(report.category)}
                 </span>
                 <h4 className="text-body-sm font-semibold text-ink mb-1 leading-tight">
                   {report.title}

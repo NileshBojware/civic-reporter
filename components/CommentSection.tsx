@@ -1,7 +1,8 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { MessageCircle, Send, Trash2, Loader2 } from 'lucide-react'
+import { VoiceInputButton } from '@/components/VoiceInputButton'
 
 interface Comment {
   id: string
@@ -229,9 +230,16 @@ export function CommentSection({ reportId, user, authorName }: CommentSectionPro
             />
 
             <div className="flex items-center justify-between">
-              <span className="text-[10px] text-muted">
-                {body.length > 0 && `${body.length}/1000`}
-              </span>
+              <div className="flex items-center gap-2">
+                <VoiceInputButton
+                  currentValue={body}
+                  onTranscript={(text) => setBody(text)}
+                  mode="append"
+                />
+                <span className="text-[10px] text-muted">
+                  {body.length > 0 && `${body.length}/1000`}
+                </span>
+              </div>
               <button
                 type="submit"
                 disabled={!user || submitting || body.trim().length === 0}

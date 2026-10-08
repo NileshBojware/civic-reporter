@@ -10,6 +10,7 @@ import {
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import { usePushNotifications } from '@/lib/usePushNotifications'
 import { useLanguage } from '@/lib/LanguageContext'
+import { DEPARTMENTS } from '@/lib/departments'
 
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime()
@@ -132,7 +133,8 @@ export default function NotificationsPage() {
   }
 
   const unreadCount = notifications.filter((n) => !n.is_read).length
-  const isAdmin = profile?.role === 'admin'
+  const isDeptAdmin = Boolean(user?.email && DEPARTMENTS.some(d => d.adminEmail.toLowerCase() === user.email.toLowerCase()))
+  const isAdmin = profile?.role === 'admin' || isDeptAdmin
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
