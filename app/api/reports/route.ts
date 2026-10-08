@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { isSupabaseServerConfigured, supabaseServer } from '@/lib/supabaseServer'
 import { readMockDb, writeMockDb, Report } from '@/lib/mockDb'
 import { getDistanceHaversine } from '@/lib/haversine'
+import { getDepartmentByCategory } from '@/lib/departments'
+import { getCategoryFormattedLabel, toLegacyCategoryKey } from '@/lib/categories'
 
 // GET /api/reports - List reports or run duplicate check
 export async function GET(request: NextRequest) {
@@ -75,7 +77,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json(reports)
 }
 
-// POST /api/reports - Create new report
+// POST /api/reports - Create new report & dispatch to Department Admin
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -84,6 +86,9 @@ export async function POST(request: NextRequest) {
     if (!title || !category || latitude === undefined || longitude === undefined || !address) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
+
+    const dept = getDepartmentByCategory(category)
+    const categoryLabel = getCategoryFormattedLabel(category)
 
     const newReportData = {
       title,
@@ -101,16 +106,70 @@ export async function POST(request: NextRequest) {
     }
 
     if (isSupabaseServerConfigured && supabaseServer) {
-      const { data, error } = await supabaseServer
+      let insertResult = await supabaseServer
         .from('reports')
         .insert(newReportData)
         .select()
         .single()
 
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 })
+      if (insertResult.error && (
+        insertResult.error.message?.includes('reports_category_check') ||
+        insertResult.error.message?.toLowerCase().includes('check constraint')
+      )) {
+        // Fallback to legacy category key to satisfy un-migrated database check constraint
+        const legacyData = {
+          ...newReportData,
+          category: toLegacyCategoryKey(category)
+        }
+        insertResult = await supabaseServer
+          .from('reports')
+          .insert(legacyData)
+          .select()
+          .single()
       }
-      return NextResponse.json(data, { status: 201 })
+
+      if (insertResult.error) {
+        return NextResponse.json({ error: insertResult.error.message }, { status: 500 })
+      }
+
+      const createdReport = insertResult.data
+
+      // Department-specific notification dispatch in Supabase
+      try {
+        // Query department admin profile
+        const { data: deptAdmins } = await supabaseServer
+          .from('profiles')
+          .select('id, full_name, department')
+          .eq('role', 'admin')
+
+        if (deptAdmins && deptAdmins.length > 0) {
+          // Filter matching department admin or general grievance admin
+          const relevantAdmins = deptAdmins.filter(
+            (adm) =>
+              adm.department === dept.id ||
+              adm.full_name?.toLowerCase().includes(dept.name.toLowerCase()) ||
+              adm.full_name?.toLowerCase().includes(dept.shortName.toLowerCase()) ||
+              adm.department === 'grievance'
+          )
+
+          const targets = relevantAdmins.length > 0 ? relevantAdmins : deptAdmins.slice(0, 1)
+
+          for (const targetAdmin of targets) {
+            await supabaseServer.from('notifications').insert({
+              user_id: targetAdmin.id,
+              report_id: createdReport.id,
+              title: `[${dept.shortName}] New Issue Reported`,
+              message: `A new ${categoryLabel} issue has been routed to your department: "${createdReport.title}" at ${createdReport.address}`,
+              type: 'new_report',
+              is_read: false,
+            })
+          }
+        }
+      } catch (notifErr) {
+        console.error('Error dispatching department admin notification:', notifErr)
+      }
+
+      return NextResponse.json(createdReport, { status: 201 })
     } else {
       // Mock mode
       const db = readMockDb()
@@ -120,18 +179,29 @@ export async function POST(request: NextRequest) {
       }
       db.reports.push(newReport)
 
-      // Trigger notifications for admins in mock mode
+      // Trigger notifications specifically for the responsible Department Admin
       if (!db.notifications) {
         db.notifications = []
       }
-      const admins = db.profiles.filter((p) => p.role === 'admin')
-      admins.forEach((admin) => {
+
+      const allAdmins = db.profiles.filter((p) => p.role === 'admin')
+      const targetAdmins = allAdmins.filter(
+        (adm) =>
+          adm.department === dept.id ||
+          adm.id === `admin-${dept.id}` ||
+          adm.email === dept.adminEmail ||
+          adm.department === 'grievance'
+      )
+
+      const finalAdmins = targetAdmins.length > 0 ? targetAdmins : allAdmins
+
+      finalAdmins.forEach((admin) => {
         db.notifications.push({
           id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
           user_id: admin.id,
           report_id: newReport.id,
-          title: 'New Issue Reported',
-          message: `A new issue has been reported: "${newReport.title}"`,
+          title: `[${dept.shortName}] New Issue Reported`,
+          message: `A new ${categoryLabel} issue has been routed to your department: "${newReport.title}" at ${newReport.address}`,
           is_read: false,
           type: 'new_report',
           created_at: new Date().toISOString(),

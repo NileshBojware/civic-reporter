@@ -3,12 +3,13 @@
 import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { Shield, LogOut, MapPin, User, Menu, X, PlusCircle, Globe, ChevronDown, Bell, ArrowRight, FileText, ClipboardList } from 'lucide-react'
+import { Shield, LogOut, MapPin, User, Menu, X, PlusCircle, Globe, ChevronDown, Bell, ArrowRight, FileText, ClipboardList, Building2 } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import { useLanguage } from '@/lib/LanguageContext'
 import { LANGUAGES } from '@/lib/translations'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { usePushNotifications } from '@/lib/usePushNotifications'
+import { DEPARTMENTS, getAdminDepartment } from '@/lib/departments'
 
 export function Navbar() {
   const pathname = usePathname()
@@ -232,16 +233,20 @@ export function Navbar() {
     router.refresh()
   }
 
+  const userDept = getAdminDepartment(user, profile)
+  const isDeptAdmin = Boolean(userDept) || (user?.email && DEPARTMENTS.some(d => d.adminEmail.toLowerCase() === user.email.toLowerCase()))
+  const isAdmin = profile?.role === 'admin' || isDeptAdmin
+
   const navLinks = [
     { href: '/reports', label: t('nav.allReports'), icon: FileText },
     { href: '/report', label: t('nav.reportIssue'), icon: PlusCircle },
     { href: '/my-reports', label: t('nav.myReports'), icon: ClipboardList },
     { href: '/notifications', label: t('nav.notifications'), icon: Bell },
-    { href: '/admin', label: t('nav.adminDashboard'), icon: Shield, adminOnly: true },
+    { href: '/admin', label: userDept ? `${userDept.shortName} Admin` : t('nav.adminDashboard'), icon: Shield, adminOnly: true },
   ]
 
   const filteredLinks = navLinks.filter((link) => {
-    if (link.adminOnly && profile?.role !== 'admin') return false
+    if (link.adminOnly && !isAdmin) return false
     return true
   })
 
@@ -457,13 +462,20 @@ export function Navbar() {
             {user ? (
               <div className="flex items-center gap-2">
                 {/* User identity pill — non-interactive, purely informational */}
-                <div className="flex items-center gap-2 text-ink bg-surface-soft border border-hairline px-3 py-1.5 rounded-md text-body-sm font-medium">
-                  {profile?.role === 'admin' ? (
-                    <Shield className="w-3.5 h-3.5 text-brand-accent shrink-0" />
+                <div className="flex items-center gap-2 text-ink bg-surface-soft border border-hairline px-3 py-1.5 rounded-lg text-body-sm font-medium">
+                  {isAdmin ? (
+                    <>
+                      <Shield className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                      <span className="font-bold text-ink">
+                        {userDept ? `${userDept.shortName} Admin` : 'Admin'}
+                      </span>
+                    </>
                   ) : (
-                    <User className="w-3.5 h-3.5 text-muted shrink-0" />
+                    <>
+                      <User className="w-3.5 h-3.5 text-muted shrink-0" />
+                      <span>{profile?.full_name || t('nav.citizen')}</span>
+                    </>
                   )}
-                  <span>{profile?.full_name || t('nav.citizen')}</span>
                 </div>
 
                 {/* Avatar circle showing initials */}
@@ -561,12 +573,17 @@ export function Navbar() {
             {user ? (
               <>
                 <div className="flex items-center gap-2 text-ink p-2 text-body-sm font-medium">
-                  {profile?.role === 'admin' ? (
-                    <Shield className="w-4 h-4 text-brand-accent" />
+                  {isAdmin ? (
+                    <>
+                      <Shield className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <span className="font-bold text-ink">{userDept ? `${userDept.shortName} Admin` : 'Admin'}</span>
+                    </>
                   ) : (
-                    <User className="w-4 h-4 text-muted" />
+                    <>
+                      <User className="w-4 h-4 text-muted" />
+                      <span>{profile?.full_name || t('nav.citizen')}</span>
+                    </>
                   )}
-                  <span>{profile?.full_name || t('nav.citizen')}</span>
                 </div>
                 <button
                   onClick={() => {

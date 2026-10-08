@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { MapPin, Image as ImageIcon, Sparkles, AlertTriangle, Navigation, ArrowLeft, Camera, RefreshCw, X } from 'lucide-react'
+import { MapPin, Image as ImageIcon, Sparkles, AlertTriangle, Navigation, ArrowLeft, Camera, RefreshCw, X, Building2 } from 'lucide-react'
 import { extractGPSFromJPEG, GPSCoordinates } from '@/lib/exif'
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import imageCompression from 'browser-image-compression'
@@ -21,14 +21,10 @@ const MapPicker = dynamic(() => import('@/components/MapPicker'), {
   ),
 })
 
-const CATEGORIES = [
-  { value: 'road_damage' },
-  { value: 'garbage' },
-  { value: 'water_leakage' },
-  { value: 'drainage' },
-  { value: 'streetlight' },
-  { value: 'other' },
-]
+import { CIVIC_CATEGORIES, getCategoryMeta } from '@/lib/categories'
+import { getDepartmentByCategory } from '@/lib/departments'
+import { VoiceInputButton } from '@/components/VoiceInputButton'
+
 
 export default function ReportPage() {
   const router = useRouter()
@@ -40,7 +36,8 @@ export default function ReportPage() {
   // Form State
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [category, setCategory] = useState('road_damage')
+  const [category, setCategory] = useState('roads_transport')
+  const [selectedSubcategory, setSelectedSubcategory] = useState('')
   const [latitude, setLatitude] = useState(19.8762) // Default Chhatrapati Sambhaji Nagar, Maharashtra
   const [longitude, setLongitude] = useState(75.3433)
   const [address, setAddress] = useState('')
@@ -509,7 +506,14 @@ export default function ReportPage() {
           </h3>
 
           <div>
-            <label className="text-caption font-bold text-muted block mb-1.5">{t('form.fieldTitle')} *</label>
+            <div className="flex items-center justify-between gap-4 mb-1.5">
+              <label className="text-caption font-bold text-muted">{t('form.fieldTitle')} *</label>
+              <VoiceInputButton
+                currentValue={title}
+                onTranscript={(text) => setTitle(text)}
+                mode="replace"
+              />
+            </div>
             <input
               type="text"
               required
@@ -521,7 +525,14 @@ export default function ReportPage() {
           </div>
 
           <div>
-            <label className="text-caption font-bold text-muted block mb-1.5">{t('form.fieldDesc')}</label>
+            <div className="flex items-center justify-between gap-4 mb-1.5">
+              <label className="text-caption font-bold text-muted">{t('form.fieldDesc')}</label>
+              <VoiceInputButton
+                currentValue={description}
+                onTranscript={(text) => setDescription(text)}
+                mode="append"
+              />
+            </div>
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
@@ -545,15 +556,83 @@ export default function ReportPage() {
             </div>
             <select
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-4 py-2 h-10 rounded-md bg-canvas border border-hairline text-body-md text-ink focus:outline-none focus:border-primary transition cursor-pointer"
+              onChange={(e) => {
+                const newCat = e.target.value
+                setCategory(newCat)
+                setSelectedSubcategory('')
+              }}
+              className="w-full px-4 py-2.5 h-11 rounded-md bg-canvas border border-hairline text-body-md font-semibold text-ink focus:outline-none focus:border-primary transition cursor-pointer"
             >
-              {CATEGORIES.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {t('category.' + c.value)}
+              {CIVIC_CATEGORIES.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {t('category.' + c.id)}
                 </option>
               ))}
             </select>
+
+            {/* Department Destination Routing Info */}
+            {(() => {
+              const targetDept = getDepartmentByCategory(category)
+              return (
+                <div className="mt-2 px-3 py-1.5 rounded-lg bg-surface-soft border border-hairline flex items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-1.5 text-muted">
+                    <Building2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                    <span>Target Department:</span>
+                    <strong className="text-ink">{targetDept.name}</strong>
+                  </div>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${targetDept.badgeColor}`}>
+                    {targetDept.shortName} Admin
+                  </span>
+                </div>
+              )
+            })()}
+
+            {/* Subcategory / Specific Issue Quick-Selection Pills */}
+            <div className="mt-3 p-3.5 rounded-lg bg-surface-soft/60 border border-hairline/80 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-muted uppercase tracking-wider">
+                  {t('form.fieldSubcategory')}
+                </span>
+                {selectedSubcategory && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSubcategory('')}
+                    className="text-[10px] text-muted hover:text-ink font-semibold"
+                  >
+                    Clear selection
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {getCategoryMeta(category).subcategories.map((sub) => {
+                  const isSelected = selectedSubcategory === sub
+                  return (
+                    <button
+                      key={sub}
+                      type="button"
+                      onClick={() => {
+                        setSelectedSubcategory(sub)
+                        // If title is empty or was previously a subcategory title, update title
+                        const currentSubs = getCategoryMeta(category).subcategories
+                        if (!title || currentSubs.includes(title)) {
+                          setTitle(sub)
+                        }
+                      }}
+                      className={`px-3 py-1.5 rounded-pill text-xs font-semibold border transition-all duration-150 cursor-pointer ${
+                        isSelected
+                          ? 'bg-primary text-on-primary border-primary shadow-sm scale-102'
+                          : 'bg-canvas text-body hover:text-ink border-hairline hover:border-muted/50 hover:bg-surface-soft'
+                      }`}
+                    >
+                      {isSelected ? '✓ ' : ''}{sub}
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="text-[11px] text-muted-soft">
+                {t('form.selectSubcategory')}
+              </p>
+            </div>
           </div>
         </div>
 

@@ -6,6 +6,7 @@ import { PlusCircle, Info, Calendar, MapPin, ArrowRight, Clipboard } from 'lucid
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import { StatusBadge } from '@/components/StatusBadge'
 import { useLanguage } from '@/lib/LanguageContext'
+import { getCategoryStyles } from '@/lib/categories'
 
 export default function MyReportsPage() {
   const [reports, setReports] = useState<any[]>([])
@@ -79,23 +80,7 @@ export default function MyReportsPage() {
     )
   }
 
-  // Category styles helper
-  const getCategoryStyles = (category: string) => {
-    switch (category) {
-      case 'garbage':
-        return 'text-category-waste bg-category-waste/10 border-category-waste/20'
-      case 'water_leakage':
-        return 'text-category-water bg-category-water/10 border-category-water/20'
-      case 'drainage':
-        return 'text-category-drainage bg-category-drainage/10 border-category-drainage/20'
-      case 'road_damage':
-        return 'text-category-waste bg-category-waste/10 border-category-waste/20'
-      case 'streetlight':
-        return 'text-category-water bg-category-water/10 border-category-water/20'
-      default:
-        return 'text-muted bg-surface-card border-hairline'
-    }
-  }
+
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-10 md:py-16 bg-canvas text-body">

@@ -4,11 +4,13 @@ import React, { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { ArrowLeft, Shield, CheckCircle, XCircle, Play, AlertCircle, FileText, Image as ImageIcon, AlertTriangle, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Shield, CheckCircle, XCircle, Play, AlertCircle, FileText, Image as ImageIcon, AlertTriangle, ShieldCheck, Building2, UserCheck } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import { StatusBadge } from '@/components/StatusBadge'
 import imageCompression from 'browser-image-compression'
 import { useLanguage } from '@/lib/LanguageContext'
+import { getCategoryStyles, getCategoryFormattedLabel } from '@/lib/categories'
+import { DEPARTMENTS, getDepartmentByCategory, getAdminDepartment } from '@/lib/departments'
 
 // Dynamically load the Leaflet Map
 const MapOverview = dynamic(() => import('@/components/MapOverview'), {
@@ -84,7 +86,10 @@ export default function AdminReportDetailPage() {
       setUser(currentUser)
       setProfile(currentProf)
 
-      if (!currentUser || currentProf?.role !== 'admin') {
+      const isDeptAdmin = currentUser?.email && DEPARTMENTS.some(d => d.adminEmail.toLowerCase() === currentUser.email.toLowerCase())
+      const isAdmin = currentProf?.role === 'admin' || isDeptAdmin || currentUser?.user_metadata?.role === 'admin'
+
+      if (!currentUser || !isAdmin) {
         setLoading(false)
         return
       }
@@ -297,20 +302,23 @@ export default function AdminReportDetailPage() {
     )
   }
 
-  if (!user || profile?.role !== 'admin') {
+  const isDeptAdmin = user?.email && DEPARTMENTS.some(d => d.adminEmail.toLowerCase() === user.email.toLowerCase())
+  const isAdmin = profile?.role === 'admin' || isDeptAdmin || user?.user_metadata?.role === 'admin'
+
+  if (!user || !isAdmin) {
     return (
       <div className="flex-grow flex items-center justify-center px-4 py-16 bg-canvas">
-        <div className="w-full max-w-md p-8 rounded-lg border border-hairline bg-canvas text-center shadow-md">
-          <AlertTriangle className="w-12 h-12 text-status-rejected mx-auto mb-4" />
-          <h2 className="text-title-lg font-bold text-ink mb-2">Access Denied</h2>
-          <p className="text-body text-body-sm mb-6 leading-relaxed">
-            Admin authorization required.
+        <div className="w-full max-w-md p-8 rounded-xl border border-hairline bg-canvas text-center shadow-lg space-y-4">
+          <AlertTriangle className="w-12 h-12 text-status-rejected mx-auto" />
+          <h2 className="text-title-lg font-bold text-ink">Department Admin Access Required</h2>
+          <p className="text-body text-body-sm leading-relaxed">
+            Please log in with municipal departmental administrative credentials.
           </p>
           <Link
             href="/login"
-            className="btn-primary w-full flex items-center justify-center"
+            className="btn-primary w-full flex items-center justify-center h-10 shadow-sm"
           >
-            Log In
+            Log In as Department Admin
           </Link>
         </div>
       </div>
@@ -319,26 +327,12 @@ export default function AdminReportDetailPage() {
 
   if (!report) return null
 
-  // Category dynamic style helper
-  const getCategoryStyles = (category: string) => {
-    switch (category) {
-      case 'garbage':
-        return 'text-category-waste bg-category-waste/10 border-category-waste/20'
-      case 'water_leakage':
-        return 'text-category-water bg-category-water/10 border-category-water/20'
-      case 'drainage':
-        return 'text-category-drainage bg-category-drainage/10 border-category-drainage/20'
-      case 'road_damage':
-        return 'text-category-waste bg-category-waste/10 border-category-waste/20'
-      case 'streetlight':
-        return 'text-category-water bg-category-water/10 border-category-water/20'
-      default:
-        return 'text-muted bg-surface-card border-hairline'
-    }
-  }
+  const reportDept = getDepartmentByCategory(report.category)
+  const currentAdminDept = getAdminDepartment(user, profile)
+  const isDirectJurisdiction = currentAdminDept?.categories.includes(report.category)
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-10 md:py-16 bg-canvas text-body">
+    <div className="container mx-auto max-w-4xl px-4 py-8 md:py-12 bg-canvas text-body">
       {/* Back to dashboard */}
       <Link
         href="/admin"
@@ -348,14 +342,29 @@ export default function AdminReportDetailPage() {
         <span>{t('adminDetail.btnBackDash')}</span>
       </Link>
 
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className={`px-2.5 py-0.5 rounded-md text-xs font-bold border ${reportDept.badgeColor}`}>
+              {reportDept.name}
+            </span>
+            {isDirectJurisdiction ? (
+              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                Direct Jurisdiction
+              </span>
+            ) : (
+              <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-surface-soft text-muted border border-hairline">
+                Cross-Department Referral
+              </span>
+            )}
+          </div>
           <h1 className="text-display-sm text-ink mb-0.5">{t('adminDetail.title')}</h1>
-          <p className="text-[10px] text-muted font-mono">ID: {report.id}</p>
+          <p className="text-[11px] text-muted font-mono">ID: {report.id}</p>
         </div>
-        <div className="flex items-center gap-2 text-caption text-muted font-bold bg-surface-soft border border-hairline px-3 py-1.5 rounded-md">
-          <Shield className="w-4 h-4 text-brand-accent" />
-          <span>{t('nav.adminDashboard')}</span>
+
+        <div className="flex items-center gap-2 text-caption text-muted font-bold bg-surface-soft border border-hairline px-3 py-1.5 rounded-lg">
+          <Building2 className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+          <span>{currentAdminDept ? `${currentAdminDept.shortName} Admin` : 'Municipal Admin'}</span>
         </div>
       </div>
 
@@ -369,10 +378,10 @@ export default function AdminReportDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left: Info Card & Action Dash */}
         <div className="lg:col-span-7 space-y-6">
-          <div className="p-6 md:p-8 rounded-lg bg-canvas border border-hairline shadow-sm space-y-6">
+          <div className="p-6 md:p-8 rounded-2xl bg-canvas border border-hairline shadow-sm space-y-6">
             <div className="flex justify-between items-center gap-4">
-              <span className={`inline-flex items-center px-3 py-1 rounded-pill text-caption font-semibold border ${getCategoryStyles(report.category)}`}>
-                {t('category.' + report.category)}
+              <span className={`inline-flex items-center px-3 py-1 rounded-full text-caption font-semibold border ${getCategoryStyles(report.category)}`}>
+                {getCategoryFormattedLabel(report.category)}
               </span>
               <StatusBadge status={report.status} />
             </div>

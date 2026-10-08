@@ -10,6 +10,7 @@ import { CommentSection } from '@/components/CommentSection'
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import confetti from 'canvas-confetti'
 import { useLanguage } from '@/lib/LanguageContext'
+import { getCategoryStyles } from '@/lib/categories'
 
 // Dynamically load the Leaflet Map
 const MapOverview = dynamic(() => import('@/components/MapOverview'), {
@@ -152,23 +153,7 @@ export default function ReportDetailPage() {
 
   const isAuthor = user && report.user_id === user.id
 
-  // Category dynamic styles helper
-  const getCategoryStyles = (category: string) => {
-    switch (category) {
-      case 'garbage':
-        return 'text-category-waste bg-category-waste/10 border-category-waste/20'
-      case 'water_leakage':
-        return 'text-category-water bg-category-water/10 border-category-water/20'
-      case 'drainage':
-        return 'text-category-drainage bg-category-drainage/10 border-category-drainage/20'
-      case 'road_damage':
-        return 'text-category-waste bg-category-waste/10 border-category-waste/20'
-      case 'streetlight':
-        return 'text-category-water bg-category-water/10 border-category-water/20'
-      default:
-        return 'text-muted bg-surface-card border-hairline'
-    }
-  }
+
 
   // Get status color representation for timeline
   const getStatusColor = (status: string) => {

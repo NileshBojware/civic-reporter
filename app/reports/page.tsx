@@ -17,14 +17,11 @@ const MapOverview = dynamic(() => import('@/components/MapOverview'), {
   ),
 })
 
+import { CIVIC_CATEGORIES, normalizeCategoryKey } from '@/lib/categories'
+
 const CATEGORIES = [
   { value: 'all' },
-  { value: 'road_damage' },
-  { value: 'garbage' },
-  { value: 'water_leakage' },
-  { value: 'drainage' },
-  { value: 'streetlight' },
-  { value: 'other' },
+  ...CIVIC_CATEGORIES.map((c) => ({ value: c.id, icon: c.icon, label: c.label })),
 ]
 
 const STATUSES = [
@@ -121,7 +118,13 @@ export default function ReportsPage() {
 
   // Filter logic
   const filteredReports = reports.filter((r) => {
-    const categoryMatch = selectedCategory === 'all' || r.category === selectedCategory
+    const normR = normalizeCategoryKey(r.category)
+    const normSelected = normalizeCategoryKey(selectedCategory)
+    const categoryMatch =
+      selectedCategory === 'all' ||
+      r.category === selectedCategory ||
+      normR === normSelected
+
     const statusMatch = selectedStatus === 'all' || r.status === selectedStatus
     return categoryMatch && statusMatch
   })
@@ -141,9 +144,11 @@ export default function ReportsPage() {
             onChange={(e) => setSelectedCategory(e.target.value)}
             className="px-3 py-2 rounded-md bg-canvas border border-hairline text-caption text-body font-semibold focus:outline-none focus:border-primary flex-grow md:flex-grow-0 cursor-pointer h-10"
           >
-            {CATEGORIES.map((c) => (
+            {CATEGORIES.map((c: any) => (
               <option key={c.value} value={c.value}>
-                {c.value === 'all' ? t('catalog.allCategories') : t('category.' + c.value)}
+                {c.value === 'all'
+                  ? t('catalog.allCategories')
+                  : t('category.' + c.value)}
               </option>
             ))}
           </select>

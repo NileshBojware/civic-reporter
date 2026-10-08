@@ -1,4 +1,4 @@
--- Database schema for SheherCare
+-- Database schema for SheherCare with Department Hierarchy & Admins
 
 -- 1. Create tables
 
@@ -7,8 +7,12 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   full_name text,
   role text not null default 'citizen' check (role in ('citizen','admin')),
+  department text, -- 'pwd', 'electrical', 'health', 'water', 'sewerage', 'solidwaste', 'gardens', 'townplanning', 'traffic', 'grievance'
   created_at timestamptz default now()
 );
+
+-- Migration if profiles table already existed without department column:
+alter table public.profiles add column if not exists department text;
 
 -- reports
 create table if not exists public.reports (
@@ -16,7 +20,12 @@ create table if not exists public.reports (
   user_id uuid references public.profiles(id) on delete set null,
   title text not null,
   description text,
-  category text not null check (category in ('road_damage','garbage','water_leakage','drainage','streetlight','other')),
+  category text not null check (category in (
+    'roads_transport', 'water_supply', 'drainage_sewerage', 'waste_management',
+    'street_lighting', 'sanitation_health', 'parks_spaces', 'traffic_parking',
+    'electricity_utilities', 'encroachment_construction', 'public_infrastructure', 'other_civic',
+    'road_damage', 'garbage', 'water_leakage', 'drainage', 'streetlight', 'other'
+  )),
   latitude double precision not null,
   longitude double precision not null,
   address text,
@@ -101,39 +110,91 @@ create policy "Allow authenticated users to remove their vote"
   using (auth.uid() = user_id);
 
 -- 4. Automatically create profile on user signup (Trigger)
--- This function runs when a new user signs up via Supabase Auth
+-- This function assigns admin role & specific department to department admin emails
 create or replace function public.handle_new_user()
 returns trigger as $$
 declare
   default_role text := 'citizen';
+  dept_id text := null;
+  default_name text := coalesce(new.raw_user_meta_data->>'full_name', 'New Citizen');
+  user_email text := lower(coalesce(new.email, ''));
 begin
-  -- Check if the email belongs to the predefined admin list
-  -- TODO: Replace these placeholders with your actual admin emails in Supabase
-  if new.email in ('shashiadmin@gmail.com', 'nileshadmin@gmail.com', 'aakleshadmin@gmail.com') then
+  -- Department Admin Email mappings
+  if user_email = 'admin.pwd@shehercare.in' then
+    default_role := 'admin';
+    dept_id := 'pwd';
+    default_name := 'Public Works / Engineering Admin';
+  elsif user_email = 'admin.electrical@shehercare.in' then
+    default_role := 'admin';
+    dept_id := 'electrical';
+    default_name := 'Electrical Department Admin';
+  elsif user_email = 'admin.health@shehercare.in' then
+    default_role := 'admin';
+    dept_id := 'health';
+    default_name := 'Public Health Department Admin';
+  elsif user_email = 'admin.water@shehercare.in' then
+    default_role := 'admin';
+    dept_id := 'water';
+    default_name := 'Water Supply Department Admin';
+  elsif user_email = 'admin.sewerage@shehercare.in' then
+    default_role := 'admin';
+    dept_id := 'sewerage';
+    default_name := 'Sewerage & Drainage Department Admin';
+  elsif user_email = 'admin.solidwaste@shehercare.in' then
+    default_role := 'admin';
+    dept_id := 'solidwaste';
+    default_name := 'Solid Waste Management Department Admin';
+  elsif user_email = 'admin.gardens@shehercare.in' then
+    default_role := 'admin';
+    dept_id := 'gardens';
+    default_name := 'Garden & Parks Department Admin';
+  elsif user_email = 'admin.townplanning@shehercare.in' then
+    default_role := 'admin';
+    dept_id := 'townplanning';
+    default_name := 'Town Planning / Encroachment Admin';
+  elsif user_email = 'admin.traffic@shehercare.in' then
+    default_role := 'admin';
+    dept_id := 'traffic';
+    default_name := 'Traffic Department Admin';
+  elsif user_email = 'admin.grievance@shehercare.in' then
+    default_role := 'admin';
+    dept_id := 'grievance';
+    default_name := 'General Administration / Grievance Cell Admin';
+  elsif user_email in ('shashiadmin@gmail.com', 'nileshadmin@gmail.com', 'aakleshadmin@gmail.com') then
+    default_role := 'admin';
+    dept_id := 'pwd';
+  end if;
+
+  -- Allow user_metadata to override if specified
+  if new.raw_user_meta_data->>'department' is not null then
+    dept_id := new.raw_user_meta_data->>'department';
+  end if;
+  if new.raw_user_meta_data->>'role' = 'admin' then
     default_role := 'admin';
   end if;
 
-  insert into public.profiles (id, full_name, role)
+  insert into public.profiles (id, full_name, role, department)
   values (
     new.id,
-    coalesce(new.raw_user_meta_data->>'full_name', 'New Citizen'),
-    default_role
-  );
+    default_name,
+    default_role,
+    dept_id
+  )
+  on conflict (id) do update
+  set 
+    full_name = excluded.full_name,
+    role = excluded.role,
+    department = excluded.department;
+
   return new;
 end;
 $$ language plpgsql security definer;
 
 -- Trigger to execute on auth.users insert
-create or replace trigger on_auth_user_created
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
-
--- Instruction to upgrade existing users to admin in Supabase SQL editor:
--- UPDATE public.profiles 
--- SET role = 'admin' 
--- FROM auth.users 
--- WHERE public.profiles.id = auth.users.id 
--- AND auth.users.email IN ('shashiadmin@gmail.com', 'nileshadmin@gmail.com', 'aakleshadmin@gmail.com');
 
 
 -- 5. Storage Buckets and Policies Setup
@@ -204,22 +265,62 @@ create policy "Allow users to update their own notifications"
   on public.notifications for update
   using (auth.uid() = user_id);
 
--- Trigger for Admin notification when a new report is created
+-- Trigger for Department Admin notification when a new report is created
 create or replace function public.handle_new_report_notification()
 returns trigger as $$
 declare
+  target_dept text := 'grievance';
+  dept_short text := 'General';
   admin_rec record;
 begin
-  for admin_rec in select id from public.profiles where role = 'admin' loop
+  -- Resolve department from category
+  if new.category in ('roads_transport', 'public_infrastructure', 'road_damage') then
+    target_dept := 'pwd';
+    dept_short := 'PWD';
+  elsif new.category in ('street_lighting', 'electricity_utilities', 'streetlight') then
+    target_dept := 'electrical';
+    dept_short := 'Electrical';
+  elsif new.category in ('sanitation_health') then
+    target_dept := 'health';
+    dept_short := 'Health';
+  elsif new.category in ('water_supply', 'water_leakage') then
+    target_dept := 'water';
+    dept_short := 'Water';
+  elsif new.category in ('drainage_sewerage', 'drainage') then
+    target_dept := 'sewerage';
+    dept_short := 'Sewerage';
+  elsif new.category in ('waste_management', 'garbage') then
+    target_dept := 'solidwaste';
+    dept_short := 'Waste';
+  elsif new.category in ('parks_spaces') then
+    target_dept := 'gardens';
+    dept_short := 'Gardens';
+  elsif new.category in ('encroachment_construction') then
+    target_dept := 'townplanning';
+    dept_short := 'Planning';
+  elsif new.category in ('traffic_parking') then
+    target_dept := 'traffic';
+    dept_short := 'Traffic';
+  else
+    target_dept := 'grievance';
+    dept_short := 'Grievance';
+  end if;
+
+  -- Insert notification for the matching department admin and grievance cell admin
+  for admin_rec in 
+    select id from public.profiles 
+    where role = 'admin' and (department = target_dept or department = 'grievance')
+  loop
     insert into public.notifications (user_id, report_id, title, message, type)
     values (
       admin_rec.id,
       new.id,
-      'New Issue Reported',
-      'A new issue has been reported: "' || new.title || '"',
+      '[' || dept_short || '] New Issue Reported',
+      'A new issue in your jurisdiction has been reported: "' || new.title || '"',
       'new_report'
     );
   end loop;
+
   return new;
 end;
 $$ language plpgsql security definer;
@@ -251,7 +352,6 @@ drop trigger if exists on_report_status_changed on public.reports;
 create trigger on_report_status_changed
   after update on public.reports
   for each row execute procedure public.handle_status_change_notification();
-
 
 
 -- 7. Comments System
@@ -304,41 +404,17 @@ create policy "Allow users to manage their own push subscriptions"
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
--- Service role needs to read all subscriptions to send push notifications
 create policy "Allow service role to read push subscriptions"
   on public.push_subscriptions for select
   to service_role
   using (true);
 
--- Allow service role to insert notifications (called from API routes, not just triggers)
 drop policy if exists "Allow service role to insert notifications" on public.notifications;
 create policy "Allow service role to insert notifications"
   on public.notifications for insert
   to service_role
   with check (true);
 
--- 9. Push Notification Setup Instructions
--- ─────────────────────────────────────────────────────────────────────────────
--- Run sections 8 above in the Supabase SQL Editor.
---
--- Push notifications are dispatched from the Next.js API layer
--- (app/api/reports/[id]/route.ts → app/api/push/send/route.ts) rather than
--- from a Postgres trigger, because calling external HTTP endpoints from
--- triggers requires the pg_net extension and additional Supabase config.
---
--- The existing handle_status_change_notification() trigger already writes
--- the in-app notification row. The push is fired immediately after the
--- PATCH update returns, giving the citizen a browser/device alert even
--- when the web app is closed.
---
--- Required: add these three env vars to your Vercel / hosting dashboard:
---   NEXT_PUBLIC_VAPID_PUBLIC_KEY=<from .env.local>
---   VAPID_PRIVATE_KEY=<from .env.local>
---   VAPID_MAILTO=mailto:admin@shehercare.app
---   INTERNAL_API_SECRET=<any long random string — prevents external callers>
---
--- Also run this in the Supabase SQL Editor to enable Realtime on the
--- notifications table (required for the live bell update in the Navbar):
-
+-- Realtime subscription publication
 alter publication supabase_realtime add table public.notifications;
 alter publication supabase_realtime add table public.push_subscriptions;
