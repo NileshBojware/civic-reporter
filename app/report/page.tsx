@@ -24,6 +24,7 @@ const MapPicker = dynamic(() => import('@/components/MapPicker'), {
 import { CIVIC_CATEGORIES, getCategoryMeta } from '@/lib/categories'
 import { getDepartmentByCategory } from '@/lib/departments'
 import { VoiceInputButton } from '@/components/VoiceInputButton'
+import { classifyImage, ClassificationResult } from '@/lib/imageClassifier'
 
 
 export default function ReportPage() {
@@ -46,6 +47,11 @@ export default function ReportPage() {
   const [compressing, setCompressing] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+
+  // AI Image Classifier State
+  const [classificationResult, setClassificationResult] = useState<ClassificationResult | null>(null)
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState(false)
+  const [isDragging, setIsDragging] = useState(false)
 
   // Camera & Geotag States
   const [cameraActive, setCameraActive] = useState(false)
@@ -160,10 +166,33 @@ export default function ReportPage() {
     }
   }
 
-  // Client side image compression and processing helper
+  // Client side image compression, classification, and processing helper
   const processAndPreviewPhoto = async (file: File) => {
     setCompressing(true)
+    setIsAnalyzingImage(true)
     setError('')
+
+    // 1. Run Image Classification (Temporary filename shortcut / ML model)
+    try {
+      const classification = await classifyImage(file)
+      setClassificationResult(classification)
+
+      // Auto-populate Issue Name / Title
+      setTitle(classification.issueName)
+
+      // Auto-populate Issue Category
+      setCategory(classification.category)
+
+      // Auto-populate matching subcategory pill if present
+      if (classification.subcategory) {
+        setSelectedSubcategory(classification.subcategory)
+      }
+    } catch (classErr) {
+      console.error('Classification error:', classErr)
+    } finally {
+      setIsAnalyzingImage(false)
+    }
+
     const options = {
       maxSizeMB: 0.15, // Compress to <150kb
       maxWidthOrHeight: 1024,
@@ -172,17 +201,27 @@ export default function ReportPage() {
 
     try {
       const compressedFile = await imageCompression(file, options)
-      setPhoto(compressedFile)
+      // Preserve original name for filename-based identification
+      const renamedCompressed = new File([compressedFile], file.name, {
+        type: compressedFile.type || 'image/jpeg',
+      })
+      setPhoto(renamedCompressed)
 
       // Convert compressed photo to base64 URL for rendering preview
       const reader = new FileReader()
       reader.onloadend = () => {
         setPhotoUrl(reader.result as string)
       }
-      reader.readAsDataURL(compressedFile)
+      reader.readAsDataURL(renamedCompressed)
     } catch (err) {
       console.error('Image compression failed:', err)
-      setError('Failed to compress image. Try a smaller file.')
+      // In case compression fails, use original file
+      setPhoto(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setPhotoUrl(reader.result as string)
+      }
+      reader.readAsDataURL(file)
     } finally {
       setCompressing(false)
     }
@@ -215,6 +254,27 @@ export default function ReportPage() {
     }
 
     await processAndPreviewPhoto(file)
+  }
+
+  // Drag and Drop handlers for upload dropzone
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+  }
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault()
+    setIsDragging(false)
+    const files = e.dataTransfer.files
+    if (files && files.length > 0) {
+      const file = files[0]
+      await processAndPreviewPhoto(file)
+    }
   }
 
   // Camera handling functions
@@ -505,6 +565,45 @@ export default function ReportPage() {
             <span>Issue Details</span>
           </h3>
 
+          {/* AI Vision Classification Banner */}
+          {classificationResult && (
+            <div className="p-4 rounded-lg bg-primary/5 border border-primary/25 space-y-2 animate-fade-in">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start gap-2.5">
+                  <div className="p-1.5 rounded-md bg-primary text-on-primary mt-0.5 shadow-sm">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-body-sm font-bold text-ink">
+                        AI Vision Auto-Classification
+                      </h4>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                        {Math.round(classificationResult.confidence * 100)}% Confidence
+                      </span>
+                    </div>
+                    <p className="text-caption text-body mt-1 leading-relaxed">
+                      {classificationResult.explanation}
+                    </p>
+                    <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs">
+                      <span className="px-2.5 py-1 rounded-md bg-canvas border border-hairline font-semibold text-ink">
+                        Issue: <strong className="text-primary">{classificationResult.issueName}</strong>
+                      </span>
+                      <span className="text-muted font-bold">→</span>
+                      <span className="px-2.5 py-1 rounded-md bg-canvas border border-hairline font-semibold text-ink">
+                        Category: <strong>{classificationResult.categoryLabel}</strong>
+                      </span>
+                      <span className="text-muted font-bold">→</span>
+                      <span className="px-2.5 py-1 rounded-md bg-canvas border border-hairline font-semibold text-ink">
+                        Department: <strong>{classificationResult.departmentName}</strong>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div>
             <div className="flex items-center justify-between gap-4 mb-1.5">
               <label className="text-caption font-bold text-muted">{t('form.fieldTitle')} *</label>
@@ -545,14 +644,17 @@ export default function ReportPage() {
           <div>
             <div className="flex items-center justify-between gap-4 mb-1.5">
               <label className="text-caption font-bold text-muted">{t('form.fieldCategory')} *</label>
-              <button
-                type="button"
-                disabled
-                className="text-[10px] text-muted-soft font-bold bg-surface-soft px-2 py-0.5 rounded border border-hairline flex items-center gap-1 cursor-not-allowed group relative"
-              >
-                <Sparkles className="w-3 h-3 text-brand-accent animate-pulse" />
-                Auto-detect from Photo (Pro)
-              </button>
+              {classificationResult ? (
+                <div className="text-[10px] text-brand-accent font-bold bg-primary/10 px-2 py-0.5 rounded border border-primary/20 flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-brand-accent" />
+                  <span>Auto-Detected: {classificationResult.categoryLabel}</span>
+                </div>
+              ) : (
+                <div className="text-[10px] text-muted-soft font-bold bg-surface-soft px-2 py-0.5 rounded border border-hairline flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-brand-accent animate-pulse" />
+                  <span>Auto-populates from photo name</span>
+                </div>
+              )}
             </div>
             <select
               value={category}
@@ -723,7 +825,16 @@ export default function ReportPage() {
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center border-2 border-dashed border-hairline hover:border-muted rounded-lg p-8 transition bg-surface-soft/30 relative">
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-8 transition relative ${
+                isDragging
+                  ? 'border-primary bg-primary/10'
+                  : 'border-hairline hover:border-muted bg-surface-soft/30'
+              }`}
+            >
               <input
                 type="file"
                 accept="image/*"
@@ -738,11 +849,29 @@ export default function ReportPage() {
                   <img
                     src={photoUrl}
                     alt="Evidence Preview"
-                    className="max-h-52 rounded-md mx-auto border border-hairline mb-3 object-contain"
+                    className="max-h-52 rounded-md mx-auto border border-hairline mb-3 object-contain shadow-sm"
                   />
-                  <span className="text-[10px] text-muted font-semibold block">
-                    Compressed size: {(photo!.size / 1024).toFixed(1)} KB
-                  </span>
+                  <div className="flex flex-wrap items-center justify-center gap-2 mb-2">
+                    <span className="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-surface-soft border border-hairline text-ink">
+                      File: {photo?.name || 'uploaded_image.jpg'}
+                    </span>
+                    <span className="text-[10px] text-muted font-semibold">
+                      {(photo ? photo.size / 1024 : 0).toFixed(1)} KB
+                    </span>
+                  </div>
+
+                  {classificationResult && (
+                    <div className="max-w-md mx-auto my-2 p-2 rounded-md bg-canvas border border-hairline flex items-center justify-between gap-2 text-xs">
+                      <div className="flex items-center gap-1.5 text-left">
+                        <Sparkles className="w-3.5 h-3.5 text-brand-accent shrink-0" />
+                        <span className="text-muted">Detected:</span>
+                        <strong className="text-ink">{classificationResult.issueName}</strong>
+                      </div>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-primary/10 text-primary border border-primary/20">
+                        {classificationResult.departmentShortName}
+                      </span>
+                    </div>
+                  )}
                   
                   <div className="flex justify-center gap-3 mt-4">
                     <button
@@ -764,10 +893,10 @@ export default function ReportPage() {
                 </div>
               ) : (
                 <div className="text-center py-4">
-                  <div className="w-12 h-12 rounded-full bg-canvas flex items-center justify-center mx-auto mb-3 border border-hairline">
+                  <div className="w-12 h-12 rounded-full bg-canvas flex items-center justify-center mx-auto mb-3 border border-hairline shadow-2xs">
                     <ImageIcon className="w-5 h-5 text-muted" />
                   </div>
-                  <p className="text-body-sm font-bold text-ink mb-1">Select photo evidence</p>
+                  <p className="text-body-sm font-bold text-ink mb-1">Select or drop photo evidence</p>
                   <p className="text-caption text-muted mb-5">{t('form.photoHelp')}</p>
                   
                   <div className="flex flex-col sm:flex-row justify-center items-center gap-3">
@@ -792,9 +921,10 @@ export default function ReportPage() {
             </div>
           )}
 
-          {compressing && (
-            <div className="text-center py-2 text-caption text-brand-accent font-semibold animate-pulse">
-              Compressing photo...
+          {(compressing || isAnalyzingImage) && (
+            <div className="text-center py-2 text-caption text-brand-accent font-semibold animate-pulse flex items-center justify-center gap-2">
+              <Sparkles className="w-4 h-4 animate-spin" />
+              <span>Analyzing image & classifying issue...</span>
             </div>
           )}
 
