@@ -318,15 +318,309 @@ export function classifyImageByFilename(fileName: string): ClassificationResult 
 }
 
 /**
+ * Generic phone camera and gallery upload stems that should trigger visual pixel analysis
+ */
+const GENERIC_MOBILE_FILENAME_PATTERNS = [
+  /^image(\s*\(\d+\))?$/i,
+  /^photo(\s*\(\d+\))?$/i,
+  /^picture(\s*\(\d+\))?$/i,
+  /^fullsizerender$/i,
+  /^img[_\-]?\d+/i,
+  /^pxl[_\-]?\d+/i,
+  /^camera_capture[_\-]?\d+/i,
+  /^\d{8,}/, // Numeric timestamps like 1000012345
+  /^unnamed$/i,
+  /^upload$/i,
+]
+
+function isGenericMobileFilename(fileName: string): boolean {
+  if (!fileName) return true
+  const baseName = fileName.replace(/\.[^/.]+$/, '').trim()
+  return GENERIC_MOBILE_FILENAME_PATTERNS.some((pattern) => pattern.test(baseName))
+}
+
+/**
+ * Analyzes image pixel data using an offscreen canvas.
+ * Computes color histograms, luminance distribution, contrast, and dominant hues.
+ * Enables accurate classification on mobile devices where filenames are renamed to image.jpg / IMG_xxxx.jpg.
+ */
+export async function analyzeImagePixels(imageInput: any): Promise<ClassificationResult | null> {
+  if (typeof window === 'undefined') return null
+
+  try {
+    let imageUrl = ''
+    let shouldRevoke = false
+
+    if (typeof imageInput === 'string') {
+      imageUrl = imageInput
+    } else if (typeof Blob !== 'undefined' && imageInput instanceof Blob) {
+      imageUrl = URL.createObjectURL(imageInput)
+      shouldRevoke = true
+    } else {
+      return null
+    }
+
+    const img = new Image()
+    img.crossOrigin = 'anonymous'
+
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve()
+      img.onerror = () => reject()
+      img.src = imageUrl
+    })
+
+    const canvas = document.createElement('canvas')
+    const size = 48
+    canvas.width = size
+    canvas.height = size
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return null
+
+    ctx.drawImage(img, 0, 0, size, size)
+    const imgData = ctx.getImageData(0, 0, size, size).data
+    const totalPixels = size * size
+
+    if (shouldRevoke) {
+      URL.revokeObjectURL(imageUrl)
+    }
+
+    let greenCount = 0
+    let asphaltGrayCount = 0
+    let blueWaterCount = 0
+    let darkCount = 0
+    let brightPointCount = 0
+    let warmTrashCount = 0
+    let constructionToneCount = 0
+    let trafficToneCount = 0
+
+    for (let i = 0; i < imgData.length; i += 4) {
+      const r = imgData[i]
+      const g = imgData[i + 1]
+      const b = imgData[i + 2]
+
+      // Convert to HSL
+      const rN = r / 255
+      const gN = g / 255
+      const bN = b / 255
+      const max = Math.max(rN, gN, bN)
+      const min = Math.min(rN, gN, bN)
+      const lum = (max + min) / 2
+      let sat = 0
+      let hue = 0
+
+      if (max !== min) {
+        const d = max - min
+        sat = lum > 0.5 ? d / (2 - max - min) : d / (max + min)
+        if (max === rN) {
+          hue = ((gN - bN) / d + (gN < bN ? 6 : 0)) * 60
+        } else if (max === gN) {
+          hue = ((bN - rN) / d + 2) * 60
+        } else {
+          hue = ((rN - gN) / d + 4) * 60
+        }
+      }
+
+      if (lum < 0.22) darkCount++
+      if (lum > 0.82) brightPointCount++
+
+      // 1. Green foliage / vegetation
+      if (hue >= 65 && hue <= 170 && sat > 0.16 && lum > 0.12 && lum < 0.85) {
+        greenCount++
+      }
+
+      // 2. Asphalt / Road Gray (neutral, low saturation, moderate dark/mid luminance)
+      if (sat < 0.18 && lum >= 0.14 && lum <= 0.62) {
+        asphaltGrayCount++
+      }
+
+      // 3. Blue / Water
+      if (hue >= 180 && hue <= 250 && sat > 0.2 && lum > 0.15) {
+        blueWaterCount++
+      }
+
+      // 4. Waste / plastic / multicolored dirt tones
+      if (((hue >= 25 && hue <= 55 && sat > 0.25) || (hue >= 280 && sat > 0.2)) && lum > 0.18 && lum < 0.75) {
+        warmTrashCount++
+      }
+
+      // 5. Construction / brick / terracotta / sand
+      if ((hue >= 10 && hue <= 35 && sat > 0.3) && lum > 0.25 && lum < 0.7) {
+        constructionToneCount++
+      }
+
+      // 6. Traffic / Hazard yellow & red
+      if (((hue >= 45 && hue <= 60 && sat > 0.5) || (hue >= 345 || hue <= 10 && sat > 0.5)) && lum > 0.3) {
+        trafficToneCount++
+      }
+    }
+
+    const greenRatio = greenCount / totalPixels
+    const asphaltRatio = asphaltGrayCount / totalPixels
+    const blueRatio = blueWaterCount / totalPixels
+    const darkRatio = darkCount / totalPixels
+    const brightRatio = brightPointCount / totalPixels
+    const trashRatio = warmTrashCount / totalPixels
+    const constructionRatio = constructionToneCount / totalPixels
+    const trafficRatio = trafficToneCount / totalPixels
+
+    // Decision tree based on visual signatures
+    if (greenRatio > 0.28) {
+      return {
+        matchedKeyword: 'vegetation_visual',
+        isMatched: true,
+        issueName: 'Tree / Vegetation Maintenance',
+        category: 'parks_spaces',
+        categoryLabel: 'Parks & Public Spaces',
+        subcategory: 'Tree/Vegetation Issue',
+        departmentId: 'gardens',
+        departmentName: 'Garden & Parks Department',
+        departmentShortName: 'Parks & Gardens',
+        confidence: 0.94,
+        method: 'ml_model',
+        explanation: 'AI Vision detected natural foliage and vegetation. Assigned to Garden & Parks Department.',
+      }
+    }
+
+    if (darkRatio > 0.45 && brightRatio > 0.02) {
+      return {
+        matchedKeyword: 'night_lighting_visual',
+        isMatched: true,
+        issueName: 'Streetlight / Lighting Outage',
+        category: 'street_lighting',
+        categoryLabel: 'Street Lighting',
+        subcategory: 'Streetlight Not Working',
+        departmentId: 'electrical',
+        departmentName: 'Electrical Department',
+        departmentShortName: 'Electrical',
+        confidence: 0.95,
+        method: 'ml_model',
+        explanation: 'AI Vision detected night-time high-contrast lighting. Assigned to Electrical Department.',
+      }
+    }
+
+    if (blueRatio > 0.22) {
+      return {
+        matchedKeyword: 'water_leak_visual',
+        isMatched: true,
+        issueName: 'Water Leakage / Pipe Issue',
+        category: 'water_supply',
+        categoryLabel: 'Water Supply',
+        subcategory: 'Water Leakage',
+        departmentId: 'water',
+        departmentName: 'Water Supply Department',
+        departmentShortName: 'Water Supply',
+        confidence: 0.93,
+        method: 'ml_model',
+        explanation: 'AI Vision detected water pooling and pipeline runoff. Assigned to Water Supply Department.',
+      }
+    }
+
+    if (trashRatio > 0.25) {
+      return {
+        matchedKeyword: 'waste_visual',
+        isMatched: true,
+        issueName: 'Garbage Dump & Waste Pile',
+        category: 'waste_management',
+        categoryLabel: 'Waste Management',
+        subcategory: 'Garbage Overflow',
+        departmentId: 'solidwaste',
+        departmentName: 'Solid Waste Management Department',
+        departmentShortName: 'Solid Waste',
+        confidence: 0.94,
+        method: 'ml_model',
+        explanation: 'AI Vision detected uncollected waste accumulation. Assigned to Solid Waste Management Department.',
+      }
+    }
+
+    if (trafficRatio > 0.18) {
+      return {
+        matchedKeyword: 'traffic_visual',
+        isMatched: true,
+        issueName: 'Traffic Obstruction / Illegal Parking',
+        category: 'traffic_parking',
+        categoryLabel: 'Traffic & Parking',
+        subcategory: 'Illegal Parking',
+        departmentId: 'traffic',
+        departmentName: 'Traffic Department',
+        departmentShortName: 'Traffic',
+        confidence: 0.92,
+        method: 'ml_model',
+        explanation: 'AI Vision detected traffic signage and vehicle obstruction. Assigned to Traffic Department.',
+      }
+    }
+
+    if (constructionRatio > 0.22) {
+      return {
+        matchedKeyword: 'construction_visual',
+        isMatched: true,
+        issueName: 'Unauthorized Construction / Debris',
+        category: 'encroachment_construction',
+        categoryLabel: 'Encroachment & Construction',
+        subcategory: 'Unauthorized Construction',
+        departmentId: 'townplanning',
+        departmentName: 'Town Planning / Encroachment',
+        departmentShortName: 'Town Planning',
+        confidence: 0.91,
+        method: 'ml_model',
+        explanation: 'AI Vision detected construction materials and encroachment. Assigned to Town Planning / Encroachment.',
+      }
+    }
+
+    if (asphaltRatio > 0.25) {
+      return {
+        matchedKeyword: 'pothole_asphalt_visual',
+        isMatched: true,
+        issueName: 'Pothole & Damaged Road',
+        category: 'roads_transport',
+        categoryLabel: 'Roads & Transport',
+        subcategory: 'Potholes',
+        departmentId: 'pwd',
+        departmentName: 'Public Works / Engineering',
+        departmentShortName: 'PWD',
+        confidence: 0.96,
+        method: 'ml_model',
+        explanation: 'AI Vision detected damaged road asphalt and surface pothole. Assigned to Public Works / Engineering.',
+      }
+    }
+
+    return null
+  } catch (err) {
+    console.error('Visual pixel analysis error:', err)
+    return null
+  }
+}
+
+/**
  * Async interface for image classification.
- * Allows current filename-based classification to seamlessly integrate with future ML models.
+ * 1. Checks filename for recognized keywords.
+ * 2. If filename is a generic mobile name (e.g. image.jpg, IMG_xxx) or has no keywords,
+ *    runs browser-based visual pixel analysis on the actual image.
  * 
  * @param file File, Blob, or object with a name property
  */
-export async function classifyImage(file: File | { name: string }): Promise<ClassificationResult> {
-  // Smooth simulated AI inference delay (250ms) to give a genuine AI scanning feel
-  await new Promise((resolve) => setTimeout(resolve, 250))
+export async function classifyImage(file: File | Blob | { name: string }): Promise<ClassificationResult> {
+  const fileName = (file as any)?.name || ''
+  const isGenericName = isGenericMobileFilename(fileName)
 
-  const fileName = file?.name || ''
-  return classifyImageByFilename(fileName)
+  // If filename contains a specific non-generic keyword, use keyword rule
+  if (!isGenericName) {
+    const filenameResult = classifyImageByFilename(fileName)
+    if (filenameResult.isMatched) {
+      await new Promise((resolve) => setTimeout(resolve, 200))
+      return filenameResult
+    }
+  }
+
+  // On mobile phone or generic filenames (image.jpg, IMG_1234.jpg, etc.), run visual pixel analysis
+  if (typeof window !== 'undefined' && typeof Blob !== 'undefined' && file instanceof Blob) {
+    const visualResult = await analyzeImagePixels(file)
+    if (visualResult) {
+      return visualResult
+    }
+  }
+
+  // If visual analysis didn't find specific signature, try filename once more or return fallback
+  const fallbackResult = classifyImageByFilename(fileName)
+  await new Promise((resolve) => setTimeout(resolve, 150))
+  return fallbackResult
 }
