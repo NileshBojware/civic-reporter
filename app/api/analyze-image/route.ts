@@ -130,8 +130,15 @@ export async function POST(request: NextRequest) {
 
     // Call Gemini API with vision content
     const genAI = new GoogleGenerativeAI(apiKey.trim())
-    // Support modern active flash models
-    const modelNames = ['gemini-3.8-flash', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-flash-latest']
+    // Support modern active flash models in order of speed and quota reliability
+    const modelNames = [
+      'gemini-3.5-flash-lite',
+      'gemini-3.6-flash',
+      'gemini-3.5-flash',
+      'gemini-3.8-flash',
+      'gemini-3.7-flash',
+      'gemini-3.1-flash-lite'
+    ]
     let parsedResult: any = null
     let lastError: any = null
 
