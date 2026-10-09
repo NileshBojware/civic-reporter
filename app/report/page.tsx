@@ -24,7 +24,7 @@ const MapPicker = dynamic(() => import('@/components/MapPicker'), {
 import { CIVIC_CATEGORIES, getCategoryMeta } from '@/lib/categories'
 import { getDepartmentByCategory } from '@/lib/departments'
 import { VoiceInputButton } from '@/components/VoiceInputButton'
-import { classifyImageWithStatus, ClassificationResult } from '@/lib/imageClassifier'
+import { classifyImageWithStatus, ClassificationResult, resizeImageForAI, fileToBase64 } from '@/lib/imageClassifier'
 
 
 export default function ReportPage() {
@@ -230,39 +230,31 @@ export default function ReportPage() {
     let processedFile: File = file
     let previewBase64 = ''
 
-    const options = {
-      maxSizeMB: 0.25, // Compress for efficient upload & AI analysis
-      maxWidthOrHeight: 1200,
-      useWebWorker: true,
-    }
-
     try {
-      const compressedFile = await imageCompression(file, options)
-      processedFile = new File([compressedFile], file.name, {
-        type: compressedFile.type || 'image/jpeg',
-      })
+      // 1. High-speed client-side canvas resize for instant mobile camera & gallery photo responsiveness
+      const resized = await resizeImageForAI(file, 1024, 0.85)
+      previewBase64 = resized.base64
+      processedFile = new File([resized.blob], file.name, { type: 'image/jpeg' })
       setPhoto(processedFile)
-
-      previewBase64 = await new Promise<string>((resolve) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result as string)
-        reader.readAsDataURL(processedFile)
-      })
       setPhotoUrl(previewBase64)
     } catch (err) {
-      console.error('Image compression failed:', err)
-      setPhoto(file)
-      previewBase64 = await new Promise<string>((resolve) => {
-        const reader = new FileReader()
-        reader.onloadend = () => resolve(reader.result as string)
-        reader.readAsDataURL(file)
-      })
-      setPhotoUrl(previewBase64)
+      console.warn('Canvas resize fallback:', err)
+      try {
+        const compressedFile = await imageCompression(file, { maxSizeMB: 0.3, maxWidthOrHeight: 1024, useWebWorker: true })
+        processedFile = new File([compressedFile], file.name, { type: compressedFile.type || 'image/jpeg' })
+        setPhoto(processedFile)
+        previewBase64 = await fileToBase64(processedFile)
+        setPhotoUrl(previewBase64)
+      } catch (compErr) {
+        setPhoto(file)
+        previewBase64 = await fileToBase64(file)
+        setPhotoUrl(previewBase64)
+      }
     } finally {
       setCompressing(false)
     }
 
-    // Run Gemini Vision Image Classification
+    // Run SheherAI Vision Image Classification
     await runAiAnalysis(previewBase64 || processedFile)
   }
 
@@ -616,6 +608,23 @@ export default function ReportPage() {
               </button>
             )}
           </h3>
+
+          {/* AI Vision Error notice if any */}
+          {aiError && (
+            <div className="p-3 rounded-lg bg-status-rejected/10 border border-status-rejected/25 text-status-rejected text-xs flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>Notice: {aiError}. You can select category manually below.</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => runAiAnalysis()}
+                className="text-xs font-bold underline cursor-pointer shrink-0"
+              >
+                Retry
+              </button>
+            </div>
+          )}
 
           {/* AI Vision Classification Banner */}
           {classificationResult && (

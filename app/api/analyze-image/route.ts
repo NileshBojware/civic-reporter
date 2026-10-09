@@ -46,6 +46,9 @@ Output ONLY valid JSON adhering strictly to this schema:
   "explanation": "string"
 }`
 
+export const dynamic = 'force-dynamic'
+export const maxDuration = 30
+
 function cleanAndParseJson(text: string): any {
   let cleaned = text.trim()
   if (cleaned.startsWith('```json')) {
@@ -112,7 +115,8 @@ export async function POST(request: NextRequest) {
       process.env.GEMINI_API_KEY ||
       process.env.GOOGLE_API_KEY ||
       process.env.NEXT_PUBLIC_GEMINI_API_KEY ||
-      process.env.GOOGLE_GENERATIVE_AI_API_KEY
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+      ''
 
     // If Gemini API Key is missing, respond indicating AI is unavailable so manual selection is used
     if (!apiKey || !apiKey.trim()) {
@@ -121,7 +125,7 @@ export async function POST(request: NextRequest) {
           success: false,
           available: false,
           missingApiKey: true,
-          error: 'Gemini API key is not configured. Please add GEMINI_API_KEY in .env.local or enter your key in the form to enable AI classification.',
+          error: 'SheherAI Vision is not configured. Please add GEMINI_API_KEY to your environment variables or provide a key.',
           manualRequired: true,
         },
         { status: 200 }
@@ -130,14 +134,13 @@ export async function POST(request: NextRequest) {
 
     // Call Gemini API with vision content
     const genAI = new GoogleGenerativeAI(apiKey.trim())
-    // Support modern active flash models in order of speed and quota reliability
+    // Active fast models in order of benchmark latency and reliability
     const modelNames = [
-      'gemini-3.5-flash-lite',
-      'gemini-3.6-flash',
       'gemini-3.5-flash',
+      'gemini-3.6-flash',
+      'gemini-3.5-flash-lite',
       'gemini-3.8-flash',
       'gemini-3.7-flash',
-      'gemini-3.1-flash-lite'
     ]
     let parsedResult: any = null
     let lastError: any = null

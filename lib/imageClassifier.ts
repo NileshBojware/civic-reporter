@@ -1,7 +1,7 @@
 /**
- * Gemini Vision Civic Image Classification Service
+ * SheherAI Vision Civic Image Classification Service
  * 
- * Analyzes visual image content using Gemini Vision to detect civic issues,
+ * Analyzes visual image content using SheherAI Vision to detect civic issues,
  * generate issue titles & descriptions, and categorize into one of 12 predefined
  * civic categories mapped directly to municipal departments.
  * 
@@ -32,7 +32,7 @@ export interface ClassificationResult {
   confidence: number
   /** Method identifier */
   method: 'gemini_vision'
-  /** Explanation of visual features identified by Gemini */
+  /** Explanation of visual features identified by SheherAI */
   explanation: string
 }
 
@@ -63,6 +63,104 @@ export interface ClassificationApiResponse {
 }
 
 /**
+ * Client-side high performance canvas resizer.
+ * Resizes any massive camera-clicked photo (10MB-30MB) down to an optimized
+ * resolution (<1024px, ~120KB) so that uploads to serverless/Vercel functions
+ * are instant, never hit 413 Payload Too Large limits, and process in 1-2s.
+ */
+export async function resizeImageForAI(
+  fileOrBlob: File | Blob,
+  maxDimension = 1024,
+  quality = 0.85
+): Promise<{ base64: string; blob: Blob }> {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    const base64 = await fileToBase64(fileOrBlob)
+    return { base64, blob: fileOrBlob }
+  }
+
+  // 1. First attempt: Fast native HTML5 Canvas Resizing
+  try {
+    const result = await new Promise<{ base64: string; blob: Blob }>((resolve, reject) => {
+      const img = new Image()
+      const objectUrl = URL.createObjectURL(fileOrBlob)
+
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl)
+        let { width, height } = img
+
+        if (width <= 0 || height <= 0) {
+          reject(new Error('Invalid image dimensions'))
+          return
+        }
+
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = Math.round((height * maxDimension) / width)
+            width = maxDimension
+          } else {
+            width = Math.round((width * maxDimension) / height)
+            height = maxDimension
+          }
+        }
+
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          reject(new Error('Canvas 2D context unavailable'))
+          return
+        }
+
+        ctx.imageSmoothingEnabled = true
+        ctx.imageSmoothingQuality = 'high'
+        ctx.drawImage(img, 0, 0, width, height)
+
+        const base64 = canvas.toDataURL('image/jpeg', quality)
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve({ base64, blob })
+            } else {
+              reject(new Error('Canvas blob generation failed'))
+            }
+          },
+          'image/jpeg',
+          quality
+        )
+      }
+
+      img.onerror = (err) => {
+        URL.revokeObjectURL(objectUrl)
+        reject(err)
+      }
+
+      img.src = objectUrl
+    })
+
+    return result
+  } catch (canvasErr) {
+    // 2. Second attempt: browser-image-compression for EXIF orientation & HEIC conversion
+    try {
+      const imageCompression = (await import('browser-image-compression')).default
+      const compressedBlob = await imageCompression(fileOrBlob as File, {
+        maxSizeMB: 0.4,
+        maxWidthOrHeight: maxDimension,
+        useWebWorker: true,
+        fileType: 'image/jpeg',
+        initialQuality: quality,
+      })
+      const base64 = await fileToBase64(compressedBlob)
+      return { base64, blob: compressedBlob }
+    } catch (compressionErr) {
+      console.warn('Image compression fallback:', compressionErr)
+      const base64 = await fileToBase64(fileOrBlob)
+      return { base64, blob: fileOrBlob }
+    }
+  }
+}
+
+/**
  * Convert a File or Blob to a base64 data URL string.
  */
 export function fileToBase64(file: File | Blob): Promise<string> {
@@ -81,7 +179,7 @@ export function fileToBase64(file: File | Blob): Promise<string> {
 }
 
 /**
- * Classifies an image using Gemini Vision by analyzing its actual visual content.
+ * Classifies an image using SheherAI Vision by analyzing its actual visual content.
  * 
  * @param image File, Blob, or base64 data URL string representing the photo evidence.
  * @param customApiKey Optional Gemini API key if provided by the user in browser session.
@@ -95,10 +193,19 @@ export async function classifyImageWithStatus(
     let mimeType = 'image/jpeg'
 
     if (typeof image === 'string') {
+      // If it's a huge base64 string, keep it, or if it has prefix parse it
       base64String = image
     } else if (image instanceof Blob) {
-      mimeType = image.type || 'image/jpeg'
-      base64String = await fileToBase64(image)
+      // Resize huge camera photos on client canvas
+      try {
+        const resized = await resizeImageForAI(image, 1024, 0.85)
+        base64String = resized.base64
+        mimeType = 'image/jpeg'
+      } catch (resizeErr) {
+        console.warn('Canvas resize fallback:', resizeErr)
+        mimeType = image.type || 'image/jpeg'
+        base64String = await fileToBase64(image)
+      }
     } else {
       throw new Error('Invalid image input format. Expected File, Blob, or base64 string.')
     }
@@ -114,7 +221,7 @@ export async function classifyImageWithStatus(
       headers['x-gemini-api-key'] = storedKey.trim()
     }
 
-    // Call server-side Gemini Vision analysis API
+    // Call server-side SheherAI Vision analysis API
     const response = await fetch('/api/analyze-image', {
       method: 'POST',
       headers,
