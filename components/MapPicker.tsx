@@ -2,8 +2,10 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import L from 'leaflet'
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
+import { useTheme } from '@/lib/ThemeContext'
+import { RefreshCw } from 'lucide-react'
 
 // Fix default Leaflet icon paths
 const DefaultIcon = L.icon({
@@ -13,7 +15,9 @@ const DefaultIcon = L.icon({
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
 })
-L.Marker.prototype.options.icon = DefaultIcon
+if (typeof window !== 'undefined' && L.Marker.prototype.options) {
+  L.Marker.prototype.options.icon = DefaultIcon
+}
 
 interface MapPickerProps {
   lat: number
@@ -31,17 +35,55 @@ function MapClickHandler({ onClick }: { onClick: (lat: number, lng: number) => v
   return null
 }
 
-// Sync map view when coordinates change externally (e.g. geolocation or EXIF GPS applied)
-function MapViewSync({ center }: { center: [number, number] }) {
-  const map = useMapEvents({})
+// Proactive sizing and external coordinate sync
+function MapController({
+  center,
+}: {
+  center: [number, number]
+}) {
+  const map = useMap()
+
+  useEffect(() => {
+    map.invalidateSize()
+
+    const timers = [
+      setTimeout(() => map.invalidateSize(), 60),
+      setTimeout(() => map.invalidateSize(), 200),
+      setTimeout(() => map.invalidateSize(), 500),
+    ]
+
+    const handleResize = () => {
+      map.invalidateSize()
+    }
+    window.addEventListener('resize', handleResize)
+
+    const container = map.getContainer()
+    let resizeObserver: ResizeObserver | null = null
+    if (typeof ResizeObserver !== 'undefined' && container) {
+      resizeObserver = new ResizeObserver(() => {
+        map.invalidateSize()
+      })
+      resizeObserver.observe(container)
+    }
+
+    return () => {
+      timers.forEach(clearTimeout)
+      window.removeEventListener('resize', handleResize)
+      if (resizeObserver) resizeObserver.disconnect()
+    }
+  }, [map])
+
+  // Sync map view when coordinates change externally (e.g. geolocation or EXIF GPS)
   useEffect(() => {
     map.setView(center, 15, { animate: true })
   }, [center, map])
+
   return null
 }
 
 export default function MapPicker({ lat, lng, onChange }: MapPickerProps) {
   const [mounted, setMounted] = useState(false)
+  const { theme } = useTheme()
   const markerRef = useRef<any>(null)
 
   useEffect(() => {
@@ -63,27 +105,39 @@ export default function MapPicker({ lat, lng, onChange }: MapPickerProps) {
     [onChange]
   )
 
+  const tileUrl = 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png'
+  const tileAttribution =
+    '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors, Tiles style by Humanitarian OpenStreetMap Team'
+
   if (!mounted) {
     return (
       <div className="w-full h-[300px] rounded-lg bg-surface-card border border-hairline animate-pulse flex items-center justify-center">
-        <span className="text-muted text-body-sm font-semibold">Loading Map Picker...</span>
+        <div className="flex flex-col items-center gap-2 text-muted">
+          <RefreshCw className="w-5 h-5 animate-spin" />
+          <span className="text-body-sm font-semibold">Loading Map Picker...</span>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="relative w-full h-[300px] rounded-lg overflow-hidden border border-hairline">
+    <div className="relative w-full h-[300px] rounded-lg overflow-hidden border border-hairline bg-surface-soft">
       <MapContainer
         center={position}
         zoom={15}
         scrollWheelZoom={false}
         className="w-full h-full z-0"
       >
-        {/* Free standard OpenStreetMap tile layer (no API key required) */}
+        {/* Fast Edge CDN Tile Layer */}
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution={tileAttribution}
+          url={tileUrl}
+          subdomains={['a', 'b']}
           maxZoom={19}
+          keepBuffer={6}
+          updateWhenZooming={false}
+          updateWhenIdle={false}
+          crossOrigin="anonymous"
         />
         <DraggableMarker
           position={position}
@@ -91,11 +145,11 @@ export default function MapPicker({ lat, lng, onChange }: MapPickerProps) {
           markerRef={markerRef}
         />
         <MapClickHandler onClick={onChange} />
-        <MapViewSync center={position} />
+        <MapController center={position} />
       </MapContainer>
 
       {/* Floating instruction label using design-system tokens */}
-      <div className="absolute bottom-2 left-2 z-10 bg-canvas/90 backdrop-blur-sm px-2.5 py-1 rounded-md text-caption text-muted border border-hairline pointer-events-none shadow-sm">
+      <div className="absolute bottom-2 left-2 z-[400] bg-canvas/90 backdrop-blur-sm px-2.5 py-1 rounded-md text-caption text-muted border border-hairline pointer-events-none shadow-sm">
         Drag pin or click map to adjust location
       </div>
     </div>

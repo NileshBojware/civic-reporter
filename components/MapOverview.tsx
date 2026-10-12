@@ -1,13 +1,28 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import L from 'leaflet'
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
+import 'leaflet/dist/leaflet.css'
 import Link from 'next/link'
 import { StatusBadge } from './StatusBadge'
 import { getCategoryFormattedLabel } from '@/lib/categories'
+import { useTheme } from '@/lib/ThemeContext'
+import { Maximize2, RefreshCw, Lock, Unlock } from 'lucide-react'
 
-interface Report {
+// Fix default Leaflet marker icon paths in case standard markers are used
+const DefaultIcon = L.icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+})
+if (typeof window !== 'undefined' && L.Marker.prototype.options) {
+  L.Marker.prototype.options.icon = DefaultIcon
+}
+
+export interface Report {
   id: string
   title: string
   category: string
@@ -15,30 +30,34 @@ interface Report {
   longitude: number
   address: string
   status: 'pending' | 'in_progress' | 'resolved' | 'rejected' | 'verified'
+  image_url?: string | null
 }
 
 interface MapOverviewProps {
   reports: Report[]
   center?: [number, number]
   zoom?: number
+  className?: string
+  interactive?: boolean
+  autoFitBounds?: boolean
+  scrollWheelZoom?: boolean
 }
 
 // Custom pulsing icons mapped to status using design-system status colors
 const getCustomIcon = (status: Report['status']) => {
-  // Status color hex values matching design.md tokens
   const colorMap: Record<Report['status'], { dot: string; ping: string }> = {
-    pending:     { dot: 'bg-amber-400 border-amber-200',   ping: 'bg-amber-300' },
-    verified:    { dot: 'bg-blue-500 border-blue-300',     ping: 'bg-blue-400' },
-    in_progress: { dot: 'bg-violet-500 border-violet-300', ping: 'bg-violet-400' },
+    pending:     { dot: 'bg-amber-400 border-amber-200',     ping: 'bg-amber-300' },
+    verified:    { dot: 'bg-blue-500 border-blue-300',       ping: 'bg-blue-400' },
+    in_progress: { dot: 'bg-violet-500 border-violet-300',   ping: 'bg-violet-400' },
     resolved:    { dot: 'bg-emerald-500 border-emerald-300', ping: 'bg-emerald-400' },
-    rejected:    { dot: 'bg-red-500 border-red-300',       ping: 'bg-red-400' },
+    rejected:    { dot: 'bg-red-500 border-red-300',         ping: 'bg-red-400' },
   }
 
   const colors = colorMap[status] ?? colorMap.pending
 
   return L.divIcon({
     html: `
-      <div class="flex items-center justify-center w-8 h-8">
+      <div class="flex items-center justify-center w-8 h-8 pointer-events-auto cursor-pointer">
         <span class="animate-ping absolute inline-flex h-6 w-6 rounded-full ${colors.ping} opacity-60"></span>
         <div class="relative w-4 h-4 rounded-full ${colors.dot} border-2 shadow-md"></div>
       </div>
@@ -50,52 +69,183 @@ const getCustomIcon = (status: Report['status']) => {
   })
 }
 
+// Subcomponent inside MapContainer to control sizing, views, and bounds
+function MapController({
+  reports,
+  center,
+  zoom,
+  autoFitBounds = false,
+}: {
+  reports: Report[]
+  center: [number, number]
+  zoom: number
+  autoFitBounds?: boolean
+}) {
+  const map = useMap()
+  const initialFitDone = useRef(false)
 
+  // Invalidate size proactively on mount and whenever the container or window resizes
+  useEffect(() => {
+    map.invalidateSize()
+
+    // Multiple staggered ticks ensure Next.js transitions and responsive layout settle
+    const timers = [
+      setTimeout(() => map.invalidateSize(), 50),
+      setTimeout(() => map.invalidateSize(), 150),
+      setTimeout(() => map.invalidateSize(), 400),
+      setTimeout(() => map.invalidateSize(), 800),
+    ]
+
+    const handleResize = () => {
+      map.invalidateSize()
+    }
+    window.addEventListener('resize', handleResize)
+
+    // Observe container dimension changes via ResizeObserver
+    const container = map.getContainer()
+    let resizeObserver: ResizeObserver | null = null
+    if (typeof ResizeObserver !== 'undefined' && container) {
+      resizeObserver = new ResizeObserver(() => {
+        map.invalidateSize()
+      })
+      resizeObserver.observe(container)
+    }
+
+    return () => {
+      timers.forEach(clearTimeout)
+      window.removeEventListener('resize', handleResize)
+      if (resizeObserver) resizeObserver.disconnect()
+    }
+  }, [map])
+
+  // Sync view when reports are loaded or filtered
+  useEffect(() => {
+    map.invalidateSize()
+
+    if (reports.length === 1) {
+      map.setView([reports[0].latitude, reports[0].longitude], zoom, { animate: true })
+    } else if (reports.length > 1 && autoFitBounds) {
+      // Fit bounds if autoFitBounds is requested
+      const bounds = L.latLngBounds(reports.map((r) => [r.latitude, r.longitude]))
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, {
+          padding: [35, 35],
+          maxZoom: 15,
+          animate: initialFitDone.current,
+        })
+        initialFitDone.current = true
+      }
+    } else {
+      map.setView(center, zoom, { animate: false })
+    }
+  }, [map, reports, center, zoom, autoFitBounds])
+
+  return null
+}
 
 export default function MapOverview({
-  reports,
+  reports = [],
   center = [19.8762, 75.3433], // Default Maharashtra, Chhatrapati Sambhaji Nagar center
   zoom = 13,
+  className = '',
+  interactive = true,
+  autoFitBounds = false,
+  scrollWheelZoom = false,
 }: MapOverviewProps) {
   const [mounted, setMounted] = useState(false)
+  const [isLocked, setIsLocked] = useState(false)
+  const { theme } = useTheme()
+  const mapRef = useRef<L.Map | null>(null)
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
+  // Filter out invalid coordinates
+  const validReports = useMemo(() => {
+    return (reports || []).filter(
+      (r) =>
+        r &&
+        typeof r.latitude === 'number' &&
+        typeof r.longitude === 'number' &&
+        !isNaN(r.latitude) &&
+        !isNaN(r.longitude)
+    )
+  }, [reports])
+
+  // Center coordinates calculation
+  const mapCenter: [number, number] = useMemo(() => {
+    if (validReports.length === 1) {
+      return [validReports[0].latitude, validReports[0].longitude]
+    }
+    return center
+  }, [validReports, center])
+
+  // Fast, reliable Humanitarian OSM tiles with no API key requirement
+  const tileUrl = 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png'
+  const tileAttribution =
+    '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors, Tiles style by Humanitarian OpenStreetMap Team'
+
+  // Fit all pins handler
+  const handleFitBounds = () => {
+    if (!mapRef.current) return
+    if (validReports.length > 1) {
+      const bounds = L.latLngBounds(validReports.map((r) => [r.latitude, r.longitude]))
+      if (bounds.isValid()) {
+        mapRef.current.fitBounds(bounds, { padding: [40, 40], maxZoom: 16, animate: true })
+      }
+    } else if (validReports.length === 1) {
+      mapRef.current.setView([validReports[0].latitude, validReports[0].longitude], 15, { animate: true })
+    } else {
+      mapRef.current.setView(center, zoom, { animate: true })
+    }
+  }
+
   if (!mounted) {
     return (
-      <div className="w-full h-full min-h-[280px] sm:min-h-[350px] md:min-h-[400px] rounded-lg bg-surface-card border border-hairline animate-pulse flex items-center justify-center">
-        <span className="text-muted text-body-sm">Loading Live Map...</span>
+      <div className={`w-full h-full min-h-[280px] sm:min-h-[350px] md:min-h-[400px] rounded-xl bg-surface-card border border-hairline animate-pulse flex items-center justify-center ${className}`}>
+        <div className="flex flex-col items-center gap-2 text-muted">
+          <RefreshCw className="w-5 h-5 animate-spin" />
+          <span className="text-body-sm font-medium">Initializing Map...</span>
+        </div>
       </div>
     )
   }
 
-  // Filter out invalid coordinates
-  const validReports = reports.filter(
-    (r) => typeof r.latitude === 'number' && typeof r.longitude === 'number'
-  )
-
-  // Determine center based on single report or default center
-  const mapCenter: [number, number] =
-    validReports.length === 1
-      ? [validReports[0].latitude, validReports[0].longitude]
-      : center
-
   return (
-    <div className="relative w-full h-full min-h-[280px] sm:min-h-[350px] md:min-h-[400px] rounded-lg overflow-hidden border border-hairline shadow-sm">
+    <div className={`relative w-full h-full min-h-[280px] sm:min-h-[350px] md:min-h-[400px] rounded-xl overflow-hidden border border-hairline shadow-sm bg-surface-soft ${className}`}>
       <MapContainer
         center={mapCenter}
         zoom={zoom}
-        scrollWheelZoom={true}
+        scrollWheelZoom={scrollWheelZoom}
+        dragging={interactive && !isLocked}
+        touchZoom={interactive && !isLocked}
+        doubleClickZoom={interactive && !isLocked}
+        zoomControl={interactive}
         className="w-full h-full z-0"
+        ref={mapRef}
       >
-        {/* Free standard OpenStreetMap tile layer (no API key required) */}
+        {/* Fast CDN Tile Layer with HTTP/2 and Edge Caching */}
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution={tileAttribution}
+          url={tileUrl}
+          subdomains={['a', 'b']}
           maxZoom={19}
+          keepBuffer={6}
+          updateWhenZooming={false}
+          updateWhenIdle={false}
+          crossOrigin="anonymous"
         />
+
+        {/* View and Size Controller */}
+        <MapController
+          reports={validReports}
+          center={center}
+          zoom={zoom}
+          autoFitBounds={autoFitBounds}
+        />
+
+        {/* Interactive Markers */}
         {validReports.map((report) => (
           <Marker
             key={report.id}
@@ -103,22 +253,39 @@ export default function MapOverview({
             icon={getCustomIcon(report.status)}
           >
             <Popup className="custom-leaflet-popup">
-              {/* Popup uses design-system text colors — white background is set by leaflet CSS overrides */}
-              <div className="p-1 min-w-[200px]">
-                <span className="text-[10px] uppercase font-bold text-muted block mb-1">
-                  {getCategoryFormattedLabel(report.category)}
-                </span>
-                <h4 className="text-body-sm font-semibold text-ink mb-1 leading-tight">
+              <div className="p-1 min-w-[210px] max-w-[280px]">
+                {/* Category badge */}
+                <div className="flex items-center justify-between gap-1 mb-1">
+                  <span className="text-[10px] uppercase font-bold tracking-wider text-muted truncate">
+                    {getCategoryFormattedLabel(report.category)}
+                  </span>
+                  <StatusBadge status={report.status} />
+                </div>
+
+                {/* Optional report thumbnail */}
+                {report.image_url && (
+                  <div className="w-full h-24 mb-2 rounded-md overflow-hidden bg-surface-card border border-hairline">
+                    <img
+                      src={report.image_url}
+                      alt={report.title}
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                )}
+
+                <h4 className="text-body-sm font-bold text-ink mb-1 leading-snug line-clamp-2">
                   {report.title}
                 </h4>
-                <p className="text-caption text-body mb-3 truncate leading-normal">
-                  {report.address || 'No address provided'}
+
+                <p className="text-caption text-body mb-2.5 truncate leading-tight">
+                  {report.address || 'Location registered'}
                 </p>
-                <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-hairline">
-                  <StatusBadge status={report.status} />
+
+                <div className="pt-2 border-t border-hairline flex items-center justify-end">
                   <Link
                     href={`/reports/${report.id}`}
-                    className="text-caption font-semibold text-brand-accent hover:underline transition"
+                    className="text-[11px] font-bold text-brand-accent hover:underline flex items-center gap-1"
                   >
                     View Details →
                   </Link>
@@ -128,6 +295,40 @@ export default function MapOverview({
           </Marker>
         ))}
       </MapContainer>
+
+      {/* Floating Controls: Lock/Unlock Gesture Mode & Fit Bounds */}
+      {interactive && (
+        <div className="absolute top-3 right-3 z-[400] flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => setIsLocked(!isLocked)}
+            title={
+              isLocked
+                ? 'Map gestures locked (touching or swiping scrolls the page). Click to unlock map panning.'
+                : 'Map gestures active. Click to lock so touches scroll the page without moving map.'
+            }
+            className={`backdrop-blur-md border border-hairline rounded-lg px-2.5 py-1.5 shadow-md transition-all hover:scale-105 flex items-center gap-1.5 text-caption font-semibold cursor-pointer ${
+              isLocked
+                ? 'bg-amber-500/90 hover:bg-amber-600 text-white border-amber-600'
+                : 'bg-white/95 dark:bg-[#0c1222]/95 hover:bg-slate-50 dark:hover:bg-[#161f36] text-ink'
+            }`}
+          >
+            {isLocked ? <Lock className="w-3.5 h-3.5" /> : <Unlock className="w-3.5 h-3.5" />}
+            <span className="text-[11px] hidden sm:inline">{isLocked ? 'Map Locked' : 'Map Active'}</span>
+          </button>
+
+          {validReports.length > 0 && (
+            <button
+              type="button"
+              onClick={handleFitBounds}
+              title="Fit all reports on map"
+              className="bg-white/95 dark:bg-[#0c1222]/95 backdrop-blur-md hover:bg-slate-50 dark:hover:bg-[#161f36] border border-hairline rounded-lg p-2 shadow-md transition-all hover:scale-105 text-ink focus:outline-none focus:ring-2 focus:ring-brand-accent/50 cursor-pointer"
+            >
+              <Maximize2 className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      )}
     </div>
   )
 }

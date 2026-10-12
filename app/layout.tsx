@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter, Plus_Jakarta_Sans } from 'next/font/google'
 import './globals.css'
+import 'leaflet/dist/leaflet.css'
 import { Navbar } from '@/components/Navbar'
 import { PwaRegister } from '@/components/PwaRegister'
 import { LanguageProvider } from '@/lib/LanguageContext'

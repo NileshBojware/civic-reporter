@@ -199,7 +199,7 @@ export default function ReportsPage() {
       <div className="flex-grow flex relative overflow-hidden h-full">
         {/* Left Side: Scrollable Issue Cards list */}
         <div
-          className={`w-full md:w-[460px] lg:w-[520px] border-r border-hairline bg-surface-soft/40 p-4 md:p-6 overflow-y-auto flex-shrink-0 h-full custom-scrollbar ${
+          className={`w-full md:w-[500px] lg:w-[560px] xl:w-[620px] border-r border-hairline bg-surface-soft/40 p-4 md:p-6 overflow-y-auto flex-shrink-0 h-full custom-scrollbar ${
             viewMode === 'map' ? 'hidden md:block' : 'block'
           }`}
         >
@@ -229,13 +229,21 @@ export default function ReportsPage() {
           )}
         </div>
 
-        {/* Right Side: OSM interactive map view */}
+        {/* Right Side: Map view with reduced size and comfortable scroll margins */}
         <div
-          className={`flex-grow h-full relative ${
-            viewMode === 'list' ? 'hidden md:block' : 'block'
+          className={`flex-grow h-full overflow-y-auto p-3 sm:p-4 md:p-6 lg:p-8 flex flex-col items-center justify-center bg-slate-50/60 dark:bg-[#070a12]/60 ${
+            viewMode === 'list' ? 'hidden md:flex' : 'flex'
           }`}
         >
-          <MapOverview reports={filteredReports} />
+          {/* Framed Map Card with reduced dimensions */}
+          <div className="w-full max-w-[780px] h-[360px] sm:h-[440px] md:h-[500px] lg:h-[540px] max-h-[calc(100vh-13rem)] rounded-2xl overflow-hidden shadow-md border border-hairline relative bg-surface-card">
+            <MapOverview reports={filteredReports} autoFitBounds={true} scrollWheelZoom={false} />
+          </div>
+
+          {/* Quick helpful guidance note */}
+          <div className="mt-2.5 text-center text-[11px] text-muted flex items-center justify-center gap-1.5 select-none pointer-events-none">
+            <span>Use +/- or double-click to zoom • Surrounding space allows smooth page scrolling</span>
+          </div>
         </div>
       </div>
     </div>
