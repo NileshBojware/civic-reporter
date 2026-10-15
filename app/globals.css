@@ -318,6 +318,12 @@ body {
   line-height: inherit !important;
 }
 
+/* Map gesture isolation and touch handling */
+.leaflet-container {
+  touch-action: pan-x pan-y;
+  overscroll-behavior: contain;
+}
+
 /* Dark mode Leaflet controls */
 .dark .leaflet-bar {
   border-color: #1e293b !important;
@@ -339,6 +345,16 @@ body {
 }
 .dark .leaflet-popup-tip {
   background: #0c1222 !important;
+}
+
+/* Dark mode Leaflet tiles: deep midnight slate civic tone without discoloring markers */
+.dark .leaflet-container:not(.satellite-map) .leaflet-tile-pane {
+  filter: brightness(0.62) invert(1) contrast(2.8) hue-rotate(200deg) saturate(0.35);
+}
+
+/* Maintain real photography colors when in satellite view */
+.dark .leaflet-container.satellite-map .leaflet-tile-pane {
+  filter: none !important;
 }
 
 /* Typography styles based on design.md */

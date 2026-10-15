@@ -35,6 +35,56 @@ function MapClickHandler({ onClick }: { onClick: (lat: number, lng: number) => v
   return null
 }
 
+// Dedicated Gesture Handler: prevents touchpad pinch from zooming the browser page
+function MapGestureHandler() {
+  const map = useMap()
+
+  useEffect(() => {
+    const container = map.getContainer()
+    if (!container) return
+
+    container.style.touchAction = 'pan-x pan-y'
+    container.style.overscrollBehavior = 'contain'
+
+    const handleWheel = (e: WheelEvent) => {
+      // 1. Touchpad Pinch-to-Zoom (Chrome sets e.ctrlKey = true on touchpad pinch)
+      if (e.ctrlKey) {
+        e.preventDefault()
+        e.stopPropagation()
+
+        const zoomDelta = -e.deltaY * 0.015
+        const currentZoom = map.getZoom()
+        const targetZoom = Math.min(Math.max(currentZoom + zoomDelta, map.getMinZoom() || 1), map.getMaxZoom() || 20)
+
+        const containerPoint = map.mouseEventToContainerPoint(e)
+        const latlng = map.containerPointToLatLng(containerPoint)
+        map.setZoomAround(latlng, targetZoom, { animate: false })
+        return
+      }
+
+      // 2. Mouse Wheel Zoom
+      e.preventDefault()
+      e.stopPropagation()
+
+      const zoomDelta = e.deltaY < 0 ? 0.5 : -0.5
+      const currentZoom = map.getZoom()
+      const targetZoom = Math.min(Math.max(currentZoom + zoomDelta, map.getMinZoom() || 1), map.getMaxZoom() || 20)
+
+      const containerPoint = map.mouseEventToContainerPoint(e)
+      const latlng = map.containerPointToLatLng(containerPoint)
+      map.setZoomAround(latlng, targetZoom, { animate: true })
+    }
+
+    container.addEventListener('wheel', handleWheel, { passive: false })
+
+    return () => {
+      container.removeEventListener('wheel', handleWheel)
+    }
+  }, [map])
+
+  return null
+}
+
 // Proactive sizing and external coordinate sync
 function MapController({
   center,
@@ -105,9 +155,16 @@ export default function MapPicker({ lat, lng, onChange }: MapPickerProps) {
     [onChange]
   )
 
-  const tileUrl = 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png'
-  const tileAttribution =
-    '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors, Tiles style by Humanitarian OpenStreetMap Team'
+  // Fast, open cartography with global edge caching and zero API key requirement
+  const tileConfig = useMemo(() => {
+    return {
+      url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      subdomains: ['a', 'b', 'c'],
+      maxZoom: 19,
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
+    }
+  }, [])
 
   if (!mounted) {
     return (
@@ -125,20 +182,26 @@ export default function MapPicker({ lat, lng, onChange }: MapPickerProps) {
       <MapContainer
         center={position}
         zoom={15}
-        scrollWheelZoom={false}
+        scrollWheelZoom={false} // Handled safely by MapGestureHandler to prevent page zoom
+        zoomSnap={0.25}         // Smooth fractional zooming for touchpad pinch
+        zoomDelta={0.5}
+        minZoom={3}
+        maxZoom={tileConfig.maxZoom}
         className="w-full h-full z-0"
       >
-        {/* Fast Edge CDN Tile Layer */}
+        {/* Fast Open Tile Layer with HTTP/2 and Edge Caching */}
         <TileLayer
-          attribution={tileAttribution}
-          url={tileUrl}
-          subdomains={['a', 'b']}
-          maxZoom={19}
-          keepBuffer={6}
+          key={theme}
+          attribution={tileConfig.attribution}
+          url={tileConfig.url}
+          subdomains={tileConfig.subdomains}
+          maxZoom={tileConfig.maxZoom}
+          keepBuffer={3}
           updateWhenZooming={false}
           updateWhenIdle={false}
           crossOrigin="anonymous"
         />
+        <MapGestureHandler />
         <DraggableMarker
           position={position}
           markerEvents={markerEvents}
@@ -150,7 +213,7 @@ export default function MapPicker({ lat, lng, onChange }: MapPickerProps) {
 
       {/* Floating instruction label using design-system tokens */}
       <div className="absolute bottom-2 left-2 z-[400] bg-canvas/90 backdrop-blur-sm px-2.5 py-1 rounded-md text-caption text-muted border border-hairline pointer-events-none shadow-sm">
-        Drag pin or click map to adjust location
+        Drag pin, scroll wheel or pinch to pinpoint location
       </div>
     </div>
   )
@@ -174,3 +237,4 @@ function DraggableMarker({
     />
   )
 }
+

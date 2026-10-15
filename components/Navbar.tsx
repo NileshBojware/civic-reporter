@@ -265,9 +265,13 @@ export function Navbar() {
     <header className="sticky top-0 z-50 w-full border-b border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-[#070a12]/95 backdrop-blur-md">
       <div className="container mx-auto px-3 sm:px-4 md:px-6 h-16 flex items-center justify-between max-w-[1240px]">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 group shrink-0">
-          <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold transition-transform duration-300">
-            <MapPin className="w-4 h-4 sm:w-5 sm:h-5 text-white dark:text-slate-900" />
+        <Link href="/" className="flex items-center gap-2.5 group shrink-0">
+          <div className="relative h-8 w-8 sm:h-9 sm:w-9 rounded-full overflow-hidden transition-transform duration-200 group-hover:scale-105 shrink-0 shadow-xs border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900">
+            <img
+              src="/logo.png"
+              alt="SheherCare Logo"
+              className="w-full h-full object-cover"
+            />
           </div>
           <span className="font-display text-base sm:text-title-md font-black text-slate-900 dark:text-white tracking-tight">
             Sheher<span className="text-blue-600 dark:text-blue-400">Care</span>

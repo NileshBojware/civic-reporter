@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { StatusBadge } from './StatusBadge'
 import { getCategoryFormattedLabel } from '@/lib/categories'
 import { useTheme } from '@/lib/ThemeContext'
-import { Maximize2, RefreshCw, Lock, Unlock } from 'lucide-react'
+import { Maximize2, RefreshCw, Lock, Unlock, Layers } from 'lucide-react'
 
 // Fix default Leaflet marker icon paths in case standard markers are used
 const DefaultIcon = L.icon({
@@ -67,6 +67,75 @@ const getCustomIcon = (status: Report['status']) => {
     iconAnchor: [16, 16],
     popupAnchor: [0, -10],
   })
+}
+
+// Subcomponent inside MapContainer to intercept wheel & touchpad pinch events.
+// Ensures touchpad pinch or mouse wheel NEVER zooms or distorts the whole website page.
+function MapGestureHandler({
+  interactive = true,
+  isLocked = false,
+  scrollWheelZoom = true,
+}: {
+  interactive?: boolean
+  isLocked?: boolean
+  scrollWheelZoom?: boolean
+}) {
+  const map = useMap()
+
+  useEffect(() => {
+    const container = map.getContainer()
+    if (!container) return
+
+    // Isolate container touch actions and scroll chaining
+    container.style.touchAction = isLocked ? 'auto' : 'pan-x pan-y'
+    container.style.overscrollBehavior = 'contain'
+
+    const handleWheel = (e: WheelEvent) => {
+      // 1. Touchpad Pinch-to-Zoom:
+      // Chrome, Edge, and Safari set e.ctrlKey = true for trackpad / precision touchpad pinches.
+      // Calling e.preventDefault() on a non-passive listener stops the entire browser page from zooming!
+      if (e.ctrlKey) {
+        e.preventDefault()
+        e.stopPropagation()
+
+        if (!interactive || isLocked) return
+
+        // Smooth fractional continuous zoom around cursor location
+        const zoomDelta = -e.deltaY * 0.015
+        const currentZoom = map.getZoom()
+        const targetZoom = Math.min(Math.max(currentZoom + zoomDelta, map.getMinZoom() || 1), map.getMaxZoom() || 20)
+
+        const containerPoint = map.mouseEventToContainerPoint(e)
+        const latlng = map.containerPointToLatLng(containerPoint)
+        map.setZoomAround(latlng, targetZoom, { animate: false })
+        return
+      }
+
+      // 2. Standard Mouse Wheel Zooming:
+      if (scrollWheelZoom && interactive && !isLocked) {
+        // Prevent scrolling the parent page while hovering the active map
+        e.preventDefault()
+        e.stopPropagation()
+
+        const zoomDelta = e.deltaY < 0 ? 0.5 : -0.5
+        const currentZoom = map.getZoom()
+        const targetZoom = Math.min(Math.max(currentZoom + zoomDelta, map.getMinZoom() || 1), map.getMaxZoom() || 20)
+
+        const containerPoint = map.mouseEventToContainerPoint(e)
+        const latlng = map.containerPointToLatLng(containerPoint)
+        map.setZoomAround(latlng, targetZoom, { animate: true })
+      }
+    }
+
+    // Must be { passive: false } so e.preventDefault() reliably halts browser page zoom
+    container.addEventListener('wheel', handleWheel, { passive: false })
+
+    return () => {
+      container.removeEventListener('wheel', handleWheel)
+    }
+  }, [map, interactive, isLocked, scrollWheelZoom])
+
+  return null
 }
 
 // Subcomponent inside MapContainer to control sizing, views, and bounds
@@ -150,10 +219,11 @@ export default function MapOverview({
   className = '',
   interactive = true,
   autoFitBounds = false,
-  scrollWheelZoom = false,
+  scrollWheelZoom = true,
 }: MapOverviewProps) {
   const [mounted, setMounted] = useState(false)
   const [isLocked, setIsLocked] = useState(false)
+  const [mapStyle, setMapStyle] = useState<'streets' | 'satellite'>('streets')
   const { theme } = useTheme()
   const mapRef = useRef<L.Map | null>(null)
 
@@ -181,10 +251,26 @@ export default function MapOverview({
     return center
   }, [validReports, center])
 
-  // Fast, reliable Humanitarian OSM tiles with no API key requirement
-  const tileUrl = 'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png'
-  const tileAttribution =
-    '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors, Tiles style by Humanitarian OpenStreetMap Team'
+  // Fast, reliable open cartography without API keys or watermarks
+  const tileConfig = useMemo(() => {
+    if (mapStyle === 'satellite') {
+      return {
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        subdomains: [] as string[],
+        maxZoom: 19,
+        attribution:
+          'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community',
+      }
+    }
+
+    return {
+      url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+      subdomains: ['a', 'b', 'c'],
+      maxZoom: 19,
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors',
+    }
+  }, [mapStyle])
 
   // Fit all pins handler
   const handleFitBounds = () => {
@@ -217,24 +303,36 @@ export default function MapOverview({
       <MapContainer
         center={mapCenter}
         zoom={zoom}
-        scrollWheelZoom={scrollWheelZoom}
+        scrollWheelZoom={false} // Handled safely by MapGestureHandler to prevent browser page zoom
+        zoomSnap={0.25}         // Enables smooth fractional zooming for touchpad pinch
+        zoomDelta={0.5}
+        minZoom={3}
+        maxZoom={tileConfig.maxZoom}
         dragging={interactive && !isLocked}
         touchZoom={interactive && !isLocked}
         doubleClickZoom={interactive && !isLocked}
         zoomControl={interactive}
-        className="w-full h-full z-0"
+        className={`w-full h-full z-0 ${mapStyle === 'satellite' ? 'satellite-map' : 'civic-streets-map'}`}
         ref={mapRef}
       >
-        {/* Fast CDN Tile Layer with HTTP/2 and Edge Caching */}
+        {/* Fast Open Tile Layer with HTTP/2 and Edge Caching */}
         <TileLayer
-          attribution={tileAttribution}
-          url={tileUrl}
-          subdomains={['a', 'b']}
-          maxZoom={19}
-          keepBuffer={6}
+          key={`${mapStyle}-${theme}`}
+          attribution={tileConfig.attribution}
+          url={tileConfig.url}
+          subdomains={tileConfig.subdomains}
+          maxZoom={tileConfig.maxZoom}
+          keepBuffer={4}
           updateWhenZooming={false}
           updateWhenIdle={false}
           crossOrigin="anonymous"
+        />
+
+        {/* Dedicated Gesture & Wheel controller prevents browser page zoom */}
+        <MapGestureHandler
+          interactive={interactive}
+          isLocked={isLocked}
+          scrollWheelZoom={scrollWheelZoom}
         />
 
         {/* View and Size Controller */}
@@ -296,9 +394,21 @@ export default function MapOverview({
         ))}
       </MapContainer>
 
-      {/* Floating Controls: Lock/Unlock Gesture Mode & Fit Bounds */}
+      {/* Floating Controls: Lock/Unlock Gesture Mode, Style Switcher & Fit Bounds */}
       {interactive && (
         <div className="absolute top-3 right-3 z-[400] flex items-center gap-1.5">
+          {/* Map Layer Style Switcher */}
+          <button
+            type="button"
+            onClick={() => setMapStyle((s) => (s === 'streets' ? 'satellite' : 'streets'))}
+            title={mapStyle === 'streets' ? 'Switch to Satellite Imagery' : 'Switch to Civic Street Map'}
+            className="bg-white/95 dark:bg-[#0c1222]/95 backdrop-blur-md hover:bg-slate-50 dark:hover:bg-[#161f36] border border-hairline rounded-lg px-2.5 py-1.5 shadow-md transition-all hover:scale-105 text-ink flex items-center gap-1.5 text-caption font-semibold cursor-pointer"
+          >
+            <Layers className="w-3.5 h-3.5 text-brand-accent" />
+            <span className="text-[11px] hidden md:inline">{mapStyle === 'streets' ? 'Civic Map' : 'Satellite'}</span>
+          </button>
+
+          {/* Lock / Unlock Gestures */}
           <button
             type="button"
             onClick={() => setIsLocked(!isLocked)}
@@ -332,3 +442,4 @@ export default function MapOverview({
     </div>
   )
 }
+

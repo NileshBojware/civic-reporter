@@ -38,8 +38,8 @@ export default function RootLayout({
               <div className="container mx-auto px-4 md:px-6 max-w-[1240px]">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
                   <div className="space-y-4">
-                    <div className="flex items-center gap-2 text-slate-900 dark:text-white font-display text-title-md font-bold">
-                      <span className="w-6 h-6 rounded-md bg-slate-900 dark:bg-white text-white dark:text-slate-900 flex items-center justify-center font-extrabold text-xs">S</span>
+                    <div className="flex items-center gap-2.5 text-slate-900 dark:text-white font-display text-title-md font-bold">
+                      <img src="/logo.png" alt="SheherCare Logo" className="w-7 h-7 rounded-full object-cover border border-slate-200/90 dark:border-slate-800" />
                       SheherCare
                     </div>
                     <p className="text-body-sm text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed">

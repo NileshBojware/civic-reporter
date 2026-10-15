@@ -237,12 +237,12 @@ export default function ReportsPage() {
         >
           {/* Framed Map Card with reduced dimensions */}
           <div className="w-full max-w-[780px] h-[360px] sm:h-[440px] md:h-[500px] lg:h-[540px] max-h-[calc(100vh-13rem)] rounded-2xl overflow-hidden shadow-md border border-hairline relative bg-surface-card">
-            <MapOverview reports={filteredReports} autoFitBounds={true} scrollWheelZoom={false} />
+            <MapOverview reports={filteredReports} autoFitBounds={true} scrollWheelZoom={true} />
           </div>
 
           {/* Quick helpful guidance note */}
           <div className="mt-2.5 text-center text-[11px] text-muted flex items-center justify-center gap-1.5 select-none pointer-events-none">
-            <span>Use +/- or double-click to zoom • Surrounding space allows smooth page scrolling</span>
+            <span>Scroll wheel or pinch to zoom map • Click &apos;Lock&apos; to scroll page</span>
           </div>
         </div>
       </div>
