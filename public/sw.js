@@ -247,7 +247,7 @@ self.addEventListener('push', (event) => {
     badge: payload.badge || '/logo.png',
     data: { url: payload.url || '/' },
     vibrate: [200, 100, 200],
-    tag: 'shehercare-notification',   // replaces previous if not yet dismissed
+    tag: payload.tag || 'shehercare-notification',
     renotify: true,
   }
 

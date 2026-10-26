@@ -102,7 +102,7 @@
       "status": "in_progress",
       "upvote_count": 6,
       "created_at": "2026-08-15T17:17:52.747Z",
-      "updated_at": "2026-08-17T17:40:57.893Z",
+      "updated_at": "2026-10-26T09:15:23.871Z",
       "rejection_reason": null,
       "resolved_image_url": null,
       "resolved_note": null
@@ -145,8 +145,8 @@
       "title": "Overflowing public garbage bin",
       "description": "Garbage has accumulated over the past week and spilled onto the road, attracting stray animals.",
       "category": "waste_management",
-      "latitude": 19.8860,
-      "longitude": 75.3340,
+      "latitude": 19.886,
+      "longitude": 75.334,
       "address": "Shahganj Market Road, Chhatrapati Sambhaji Nagar, Maharashtra",
       "image_url": "https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&w=800&q=80",
       "status": "verified",
@@ -161,7 +161,7 @@
       "description": "Heavy silt and plastic waste is completely blocking the rainwater drain near the residential junction.",
       "category": "drainage_sewerage",
       "latitude": 19.8672,
-      "longitude": 75.3370,
+      "longitude": 75.337,
       "address": "Shahnoorwadi Main Road, Chhatrapati Sambhaji Nagar, Maharashtra",
       "image_url": "https://images.unsplash.com/photo-1541888946425-d0fbb186156a?auto=format&fit=crop&w=800&q=80",
       "status": "in_progress",
@@ -175,8 +175,8 @@
       "title": "Traffic signal malfunctioning at busy junction",
       "description": "The green signal is not lighting up, leading to severe confusion and vehicle gridlock during rush hour.",
       "category": "traffic_parking",
-      "latitude": 19.8790,
-      "longitude": 75.3210,
+      "latitude": 19.879,
+      "longitude": 75.321,
       "address": "Baba Petrol Pump Chowk, Chhatrapati Sambhaji Nagar, Maharashtra",
       "image_url": "https://images.unsplash.com/photo-1508962914676-134849a727f0?auto=format&fit=crop&w=800&q=80",
       "status": "pending",
@@ -206,8 +206,8 @@
       "title": "Loose dangling electrical wire near bus stop",
       "description": "High tension cable has slipped from its clamp and is hanging dangerously low over pedestrians.",
       "category": "electricity_utilities",
-      "latitude": 19.8770,
-      "longitude": 75.3290,
+      "latitude": 19.877,
+      "longitude": 75.329,
       "address": "CBS Bus Station, Chhatrapati Sambhaji Nagar, Maharashtra",
       "image_url": "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=800&q=80",
       "status": "verified",
@@ -255,5 +255,46 @@
       "report_id": "report-1",
       "user_id": "citizen-1786989023398"
     }
-  ]
+  ],
+  "notifications": [
+    {
+      "id": "notif-1",
+      "user_id": "citizen-id-123",
+      "report_id": "report-3",
+      "title": "Issue Status Updated",
+      "message": "Your reported issue \"Water leaking from main line\" status has been changed to resolved.",
+      "is_read": false,
+      "type": "status_change",
+      "created_at": "2026-10-25T09:11:06.407Z"
+    },
+    {
+      "id": "notif-1793006124775-gosdd2m",
+      "user_id": "citizen-id-123",
+      "report_id": "report-1",
+      "title": "Issue Status Updated",
+      "message": "Your reported issue \"Deep pothole near crossroads\" status has been changed to resolved.",
+      "is_read": false,
+      "type": "status_change",
+      "created_at": "2026-10-26T09:15:24.775Z"
+    }
+  ],
+  "comments": [
+    {
+      "id": "comment-1",
+      "report_id": "report-1",
+      "user_id": "citizen-id-123",
+      "author_name": "John Citizen",
+      "body": "This pothole has been here for weeks, my bike tyre burst because of it!",
+      "created_at": "2026-10-25T09:11:06.407Z"
+    },
+    {
+      "id": "comment-2",
+      "report_id": "report-1",
+      "user_id": null,
+      "author_name": "Anonymous",
+      "body": "Agreed, very dangerous especially at night. Please fix urgently.",
+      "created_at": "2026-10-25T21:11:06.407Z"
+    }
+  ],
+  "push_subscriptions": []
 }

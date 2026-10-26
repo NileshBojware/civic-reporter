@@ -76,12 +76,22 @@ export interface MockNotification {
   created_at: string
 }
 
+export interface MockPushSubscription {
+  id: string
+  user_id: string
+  endpoint: string
+  p256dh: string
+  auth: string
+  created_at: string
+}
+
 interface MockData {
   profiles: Profile[]
   reports: Report[]
   report_votes: ReportVote[]
   notifications: MockNotification[]
   comments: Comment[]
+  push_subscriptions: MockPushSubscription[]
 }
 
 const defaultData: MockData = {
@@ -331,7 +341,8 @@ const defaultData: MockData = {
       body: 'Agreed, very dangerous especially at night. Please fix urgently.',
       created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()
     }
-  ]
+  ],
+  push_subscriptions: []
 }
 
 export function readMockDb(): MockData {
@@ -347,6 +358,7 @@ export function readMockDb(): MockData {
       ...defaultData,
       ...parsed,
       comments: parsed.comments ?? defaultData.comments,
+      push_subscriptions: parsed.push_subscriptions ?? [],
     }
   } catch {
     return defaultData
