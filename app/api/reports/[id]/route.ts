@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { isSupabaseServerConfigured, supabaseServer } from '@/lib/supabaseServer'
 import { readMockDb, writeMockDb, Report } from '@/lib/mockDb'
 import { sendReportStatusPushNotification } from '@/lib/pushService'
-import { getDepartmentByCategory } from '@/lib/departments'
+import { getDepartmentByCategory, isCategoryInDepartment } from '@/lib/departments'
 
 // GET /api/reports/[id] - Get single report details
 export async function GET(
@@ -67,7 +67,7 @@ export async function PATCH(
 
       if (reportCategory) {
         const targetDept = getDepartmentByCategory(reportCategory)
-        const isAuthorized = targetDept.id === admin_department_id || targetDept.categories.includes(reportCategory)
+        const isAuthorized = targetDept.id === admin_department_id || isCategoryInDepartment(reportCategory, admin_department_id)
         if (!isAuthorized) {
           return NextResponse.json(
             { error: `Permission Denied: Only administrators of the ${targetDept.name} (${targetDept.shortName}) can modify this ticket's status.` },

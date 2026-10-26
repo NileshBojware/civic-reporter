@@ -11,6 +11,7 @@ import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import confetti from 'canvas-confetti'
 import { useLanguage } from '@/lib/LanguageContext'
 import { getCategoryStyles } from '@/lib/categories'
+import { getLocalizedReport } from '@/lib/contentTranslator'
 
 // Dynamically load the Leaflet Map
 const MapOverview = dynamic(() => import('@/components/MapOverview'), {
@@ -151,9 +152,8 @@ export default function ReportDetailPage() {
 
   if (!report) return null
 
+  const localized = getLocalizedReport(report, language)
   const isAuthor = user && report.user_id === user.id
-
-
 
   // Get status color representation for timeline
   const getStatusColor = (status: string) => {
@@ -192,7 +192,7 @@ export default function ReportDetailPage() {
             </div>
 
             <h1 className="text-title-lg font-bold text-ink leading-snug mb-4">
-              {report.title}
+              {localized.title}
             </h1>
 
             <div className="flex flex-wrap items-center gap-4 text-caption text-muted border-b border-hairline-soft pb-4 mb-6">
@@ -202,13 +202,13 @@ export default function ReportDetailPage() {
               </div>
               <div className="flex items-center gap-1.5">
                 <MapPin className="w-4 h-4 text-brand-accent" />
-                <span className="truncate max-w-[220px]">{report.address}</span>
+                <span className="truncate max-w-[220px]">{localized.address}</span>
               </div>
             </div>
 
-            <h3 className="text-caption font-bold text-ink uppercase mb-2">Description</h3>
+            <h3 className="text-caption font-bold text-ink uppercase mb-2">{t('form.fieldDesc') || 'Description'}</h3>
             <p className="text-body-md text-body leading-relaxed mb-6">
-              {report.description || 'No description provided.'}
+              {localized.description || 'No description provided.'}
             </p>
 
             {/* Evidence Comparison Grid */}
@@ -329,7 +329,7 @@ export default function ReportDetailPage() {
           <div className="p-5 rounded-lg bg-canvas border border-hairline shadow-sm space-y-4">
             <h3 className="text-caption font-bold text-ink uppercase tracking-wider">Location Pin</h3>
             <div className="h-[200px] rounded-lg overflow-hidden border border-hairline">
-              <MapOverview reports={[report]} zoom={15} />
+              <MapOverview reports={[localized]} zoom={15} />
             </div>
             <p className="text-[10px] text-muted leading-normal font-mono text-center">
               Lat: {report.latitude.toFixed(6)}, Lng: {report.longitude.toFixed(6)}

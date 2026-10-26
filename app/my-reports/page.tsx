@@ -7,6 +7,7 @@ import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import { StatusBadge } from '@/components/StatusBadge'
 import { useLanguage } from '@/lib/LanguageContext'
 import { getCategoryStyles } from '@/lib/categories'
+import { getLocalizedReport } from '@/lib/contentTranslator'
 
 export default function MyReportsPage() {
   const [reports, setReports] = useState<any[]>([])
@@ -105,31 +106,33 @@ export default function MyReportsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {reports.map((report) => (
-            <div
-              key={report.id}
-              className="p-5 md:p-6 rounded-lg bg-canvas border border-hairline flex flex-col md:flex-row md:items-center justify-between gap-5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition-all duration-200"
-            >
-              <div className="flex gap-4 items-start md:items-center min-w-0">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={report.image_url}
-                  alt={report.title}
-                  className="w-16 h-16 rounded-md object-cover border border-hairline shrink-0 bg-surface-card"
-                />
-                <div className="min-w-0">
-                  <h3 className="text-body-md font-bold text-ink mb-1.5 leading-snug line-clamp-1">
-                    {report.title}
-                  </h3>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-caption text-muted">
-                    <span className={`inline-flex px-2 py-0.5 rounded-pill text-[11px] font-semibold border ${getCategoryStyles(report.category)}`}>
-                      {t('category.' + report.category)}
-                    </span>
-                    <span className="text-hairline-soft hidden sm:inline">|</span>
-                    <span className="flex items-center gap-1 min-w-0">
-                      <MapPin className="w-3.5 h-3.5 text-brand-accent shrink-0" />
-                      <span className="truncate max-w-[150px] sm:max-w-[200px]">{report.address}</span>
-                    </span>
+          {reports.map((report) => {
+            const localized = getLocalizedReport(report, language)
+            return (
+              <div
+                key={report.id}
+                className="p-5 md:p-6 rounded-lg bg-canvas border border-hairline flex flex-col md:flex-row md:items-center justify-between gap-5 hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)] transition-all duration-200"
+              >
+                <div className="flex gap-4 items-start md:items-center min-w-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={report.image_url}
+                    alt={localized.title}
+                    className="w-16 h-16 rounded-md object-cover border border-hairline shrink-0 bg-surface-card"
+                  />
+                  <div className="min-w-0">
+                    <h3 className="text-body-md font-bold text-ink mb-1.5 leading-snug line-clamp-1">
+                      {localized.title}
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-caption text-muted">
+                      <span className={`inline-flex px-2 py-0.5 rounded-pill text-[11px] font-semibold border ${getCategoryStyles(report.category)}`}>
+                        {t('category.' + report.category)}
+                      </span>
+                      <span className="text-hairline-soft hidden sm:inline">|</span>
+                      <span className="flex items-center gap-1 min-w-0">
+                        <MapPin className="w-3.5 h-3.5 text-brand-accent shrink-0" />
+                        <span className="truncate max-w-[150px] sm:max-w-[200px]">{localized.address}</span>
+                      </span>
                     <span className="text-hairline-soft hidden sm:inline">|</span>
                     <span className="flex items-center gap-1 shrink-0">
                       <Calendar className="w-3.5 h-3.5 text-muted shrink-0" />
@@ -150,7 +153,8 @@ export default function MyReportsPage() {
                 </Link>
               </div>
             </div>
-          ))}
+          )
+        })}
         </div>
       )}
     </div>

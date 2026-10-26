@@ -1,3 +1,5 @@
+import { normalizeCategoryKey } from '@/lib/categories'
+
 export interface Department {
   id: string
   name: string
@@ -25,7 +27,7 @@ export const DEPARTMENTS: Department[] = [
     adminEmail: 'admin.pwd@shehercare.in',
     defaultPassword: 'Sheher@PWD26',
     adminTitle: 'Public Works / Engineering Admin',
-    categories: ['roads_transport', 'public_infrastructure', 'road_damage'],
+    categories: ['roads_transport', 'public_infrastructure'],
     iconName: 'HardHat',
     accentColor: 'amber',
     bgLight: 'bg-amber-500/10 dark:bg-amber-950/30',
@@ -42,7 +44,7 @@ export const DEPARTMENTS: Department[] = [
     adminEmail: 'admin.electrical@shehercare.in',
     defaultPassword: 'Sheher@ELEC26',
     adminTitle: 'Electrical Department Admin',
-    categories: ['street_lighting', 'electricity_utilities', 'streetlight'],
+    categories: ['street_lighting', 'electricity_utilities'],
     iconName: 'Zap',
     accentColor: 'yellow',
     bgLight: 'bg-yellow-500/10 dark:bg-yellow-950/30',
@@ -76,7 +78,7 @@ export const DEPARTMENTS: Department[] = [
     adminEmail: 'admin.water@shehercare.in',
     defaultPassword: 'Sheher@WATER26',
     adminTitle: 'Water Supply Department Admin',
-    categories: ['water_supply', 'water_leakage'],
+    categories: ['water_supply'],
     iconName: 'Droplets',
     accentColor: 'sky',
     bgLight: 'bg-sky-500/10 dark:bg-sky-950/30',
@@ -93,7 +95,7 @@ export const DEPARTMENTS: Department[] = [
     adminEmail: 'admin.sewerage@shehercare.in',
     defaultPassword: 'Sheher@SEWER26',
     adminTitle: 'Sewerage & Drainage Department Admin',
-    categories: ['drainage_sewerage', 'drainage'],
+    categories: ['drainage_sewerage'],
     iconName: 'Waves',
     accentColor: 'indigo',
     bgLight: 'bg-indigo-500/10 dark:bg-indigo-950/30',
@@ -110,7 +112,7 @@ export const DEPARTMENTS: Department[] = [
     adminEmail: 'admin.solidwaste@shehercare.in',
     defaultPassword: 'Sheher@WASTE26',
     adminTitle: 'Solid Waste Management Department Admin',
-    categories: ['waste_management', 'garbage'],
+    categories: ['waste_management'],
     iconName: 'Trash2',
     accentColor: 'orange',
     bgLight: 'bg-orange-500/10 dark:bg-orange-950/30',
@@ -178,7 +180,7 @@ export const DEPARTMENTS: Department[] = [
     adminEmail: 'admin.grievance@shehercare.in',
     defaultPassword: 'Sheher@ADMIN26',
     adminTitle: 'General Administration / Grievance Cell Admin',
-    categories: ['other_civic', 'other'],
+    categories: ['other_civic'],
     iconName: 'ShieldCheck',
     accentColor: 'slate',
     bgLight: 'bg-slate-500/10 dark:bg-slate-800/40',
@@ -227,8 +229,8 @@ export function getDepartmentByEmail(email?: string | null): Department | null {
  */
 export function getDepartmentByCategory(category?: string | null): Department {
   if (!category) return DEPARTMENT_MAP['grievance']
-  const cat = category.toLowerCase().trim()
-  const found = DEPARTMENTS.find(d => d.categories.includes(cat))
+  const cat = normalizeCategoryKey(category.toLowerCase().trim())
+  const found = DEPARTMENTS.find(d => d.categories.some(c => normalizeCategoryKey(c) === cat))
   return found || DEPARTMENT_MAP['grievance']
 }
 
@@ -275,5 +277,6 @@ export function getAdminDepartment(user?: any, profile?: any): Department | null
 export function isCategoryInDepartment(category: string, departmentId: string): boolean {
   const dept = DEPARTMENT_MAP[departmentId]
   if (!dept) return false
-  return dept.categories.includes(category.toLowerCase().trim())
+  const normCat = normalizeCategoryKey(category.toLowerCase().trim())
+  return dept.categories.some(c => normalizeCategoryKey(c) === normCat)
 }

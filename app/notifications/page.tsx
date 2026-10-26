@@ -11,6 +11,7 @@ import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import { usePushNotifications } from '@/lib/usePushNotifications'
 import { useLanguage } from '@/lib/LanguageContext'
 import { DEPARTMENTS } from '@/lib/departments'
+import { getLocalizedNotification } from '@/lib/contentTranslator'
 
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime()
@@ -41,7 +42,7 @@ const TYPE_META: Record<string, { label: string; color: string; icon: React.Reac
 
 export default function NotificationsPage() {
   const router = useRouter()
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
 
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
@@ -160,12 +161,12 @@ export default function NotificationsPage() {
           <div>
             <h1 className="text-display-sm font-bold text-ink flex items-center gap-2">
               <Bell className="w-6 h-6 text-brand-accent" />
-              Notifications
+              {t('notifications.title') || 'Notifications'}
             </h1>
             <p className="text-body-sm text-muted mt-1">
               {unreadCount > 0
-                ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}`
-                : 'All caught up'}
+                ? `${unreadCount} ${t('notifications.unreadCount') || 'unread notifications'}`
+                : (t('notifications.allCaughtUp') || 'All caught up')}
             </p>
           </div>
           {unreadCount > 0 && (
@@ -177,7 +178,7 @@ export default function NotificationsPage() {
               {markingAll
                 ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 : <CheckCheck className="w-3.5 h-3.5" />}
-              Mark all read
+              {t('nav.markAllRead') || 'Mark all read'}
             </button>
           )}
         </div>
@@ -276,6 +277,8 @@ export default function NotificationsPage() {
           ) : (
             notifications.map((notif) => {
               const meta = TYPE_META[notif.type] ?? TYPE_META.status_change
+              const localizedNotif = getLocalizedNotification(notif, language)
+              const notifTitle = t(`notification.${notif.type}`) || localizedNotif.title || meta.label
               const targetUrl = isAdmin
                 ? `/admin/reports/${notif.report_id}`
                 : `/reports/${notif.report_id}`
@@ -304,11 +307,11 @@ export default function NotificationsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-baseline gap-2 mb-1">
                         <span className={`text-caption font-bold ${meta.color}`}>
-                          {meta.label}
+                          {notifTitle}
                         </span>
                         <span className="text-[10px] text-muted">{timeAgo(notif.created_at)}</span>
                       </div>
-                      <p className="text-body-sm text-body leading-relaxed">{notif.message}</p>
+                      <p className="text-body-sm text-body leading-relaxed">{localizedNotif.message}</p>
 
                       {/* Actions row */}
                       <div className="flex items-center gap-4 mt-3">
@@ -317,14 +320,14 @@ export default function NotificationsPage() {
                           onClick={() => markRead(notif.id)}
                           className="text-caption font-semibold text-brand-accent hover:underline flex items-center gap-1"
                         >
-                          View report <ArrowRight className="w-3 h-3" />
+                          {t('notifications.viewReport') || 'View report'} <ArrowRight className="w-3 h-3" />
                         </Link>
                         {!notif.is_read && (
                           <button
                             onClick={() => markRead(notif.id)}
                             className="text-caption text-muted hover:text-ink flex items-center gap-1 cursor-pointer"
                           >
-                            <CheckCircle2 className="w-3 h-3" /> Mark read
+                            <CheckCircle2 className="w-3 h-3" /> {t('notifications.markRead') || 'Mark read'}
                           </button>
                         )}
                       </div>

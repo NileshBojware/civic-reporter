@@ -6,6 +6,7 @@ import { MapPin, ThumbsUp, Calendar, ArrowRight } from 'lucide-react'
 import { StatusBadge } from './StatusBadge'
 import { useLanguage } from '@/lib/LanguageContext'
 import { getCategoryStyles } from '@/lib/categories'
+import { getLocalizedReport } from '@/lib/contentTranslator'
 
 interface Report {
   id: string
@@ -30,6 +31,8 @@ export function ReportCard({ report, onUpvote, isUpvoted = false }: ReportCardPr
   const [upvoted, setUpvoted] = useState(isUpvoted)
   const [loading, setLoading] = useState(false)
   const { t, language } = useLanguage()
+
+  const localized = getLocalizedReport(report, language)
 
   const handleUpvote = async (e: React.MouseEvent) => {
     e.preventDefault()
@@ -61,7 +64,7 @@ export function ReportCard({ report, onUpvote, isUpvoted = false }: ReportCardPr
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={report.image_url || 'https://images.unsplash.com/photo-1584824486509-112e4181ff6b?auto=format&fit=crop&w=800&q=80'}
-          alt={report.title}
+          alt={localized.title}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
           loading="lazy"
         />
@@ -73,7 +76,7 @@ export function ReportCard({ report, onUpvote, isUpvoted = false }: ReportCardPr
           {/* Header row: Title */}
           <div className="flex items-start justify-between gap-4 mb-1">
             <h3 className="text-title-md font-bold text-slate-900 dark:text-white group-hover:text-[#177f95] dark:group-hover:text-[#269eb8] transition-colors leading-snug line-clamp-1">
-              {report.title}
+              {localized.title}
             </h3>
           </div>
 
@@ -81,7 +84,7 @@ export function ReportCard({ report, onUpvote, isUpvoted = false }: ReportCardPr
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-slate-500 dark:text-slate-400 mb-2">
             <div className="flex items-center gap-1 min-w-0">
               <MapPin className="w-3.5 h-3.5 text-[#177f95] dark:text-[#269eb8] shrink-0" />
-              <span className="truncate">{report.address}</span>
+              <span className="truncate">{localized.address}</span>
             </div>
             <div className="flex items-center gap-1 shrink-0">
               <Calendar className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
@@ -99,7 +102,7 @@ export function ReportCard({ report, onUpvote, isUpvoted = false }: ReportCardPr
 
           {/* Description truncated to 2 lines */}
           <p className="text-body-md text-slate-600 dark:text-slate-300 line-clamp-2 leading-relaxed mb-4">
-            {report.description}
+            {localized.description}
           </p>
         </div>
 

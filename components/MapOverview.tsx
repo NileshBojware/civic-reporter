@@ -8,6 +8,8 @@ import Link from 'next/link'
 import { StatusBadge } from './StatusBadge'
 import { getCategoryFormattedLabel } from '@/lib/categories'
 import { useTheme } from '@/lib/ThemeContext'
+import { useLanguage } from '@/lib/LanguageContext'
+import { getLocalizedReport } from '@/lib/contentTranslator'
 import { Maximize2, RefreshCw, Lock, Unlock, Layers } from 'lucide-react'
 
 // Fix default Leaflet marker icon paths in case standard markers are used
@@ -225,6 +227,7 @@ export default function MapOverview({
   const [isLocked, setIsLocked] = useState(false)
   const [mapStyle, setMapStyle] = useState<'streets' | 'satellite'>('streets')
   const { theme } = useTheme()
+  const { language, t } = useLanguage()
   const mapRef = useRef<L.Map | null>(null)
 
   useEffect(() => {
@@ -344,54 +347,57 @@ export default function MapOverview({
         />
 
         {/* Interactive Markers */}
-        {validReports.map((report) => (
-          <Marker
-            key={report.id}
-            position={[report.latitude, report.longitude]}
-            icon={getCustomIcon(report.status)}
-          >
-            <Popup className="custom-leaflet-popup">
-              <div className="p-1 min-w-[210px] max-w-[280px]">
-                {/* Category badge */}
-                <div className="flex items-center justify-between gap-1 mb-1">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-muted truncate">
-                    {getCategoryFormattedLabel(report.category)}
-                  </span>
-                  <StatusBadge status={report.status} />
-                </div>
-
-                {/* Optional report thumbnail */}
-                {report.image_url && (
-                  <div className="w-full h-24 mb-2 rounded-md overflow-hidden bg-surface-card border border-hairline">
-                    <img
-                      src={report.image_url}
-                      alt={report.title}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
+        {validReports.map((report) => {
+          const localized = getLocalizedReport(report, language)
+          return (
+            <Marker
+              key={report.id}
+              position={[report.latitude, report.longitude]}
+              icon={getCustomIcon(report.status)}
+            >
+              <Popup className="custom-leaflet-popup">
+                <div className="p-1 min-w-[210px] max-w-[280px]">
+                  {/* Category badge */}
+                  <div className="flex items-center justify-between gap-1 mb-1">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-muted truncate">
+                      {t('category.' + report.category) || getCategoryFormattedLabel(report.category)}
+                    </span>
+                    <StatusBadge status={report.status} />
                   </div>
-                )}
 
-                <h4 className="text-body-sm font-bold text-ink mb-1 leading-snug line-clamp-2">
-                  {report.title}
-                </h4>
+                  {/* Optional report thumbnail */}
+                  {report.image_url && (
+                    <div className="w-full h-24 mb-2 rounded-md overflow-hidden bg-surface-card border border-hairline">
+                      <img
+                        src={report.image_url}
+                        alt={localized.title}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+                  )}
 
-                <p className="text-caption text-body mb-2.5 truncate leading-tight">
-                  {report.address || 'Location registered'}
-                </p>
+                  <h4 className="text-body-sm font-bold text-ink mb-1 leading-snug line-clamp-2">
+                    {localized.title}
+                  </h4>
 
-                <div className="pt-2 border-t border-hairline flex items-center justify-end">
-                  <Link
-                    href={`/reports/${report.id}`}
-                    className="text-[11px] font-bold text-brand-accent hover:underline flex items-center gap-1"
-                  >
-                    View Details →
-                  </Link>
+                  <p className="text-caption text-body mb-2.5 truncate leading-tight">
+                    {localized.address || 'Location registered'}
+                  </p>
+
+                  <div className="pt-2 border-t border-hairline flex items-center justify-end">
+                    <Link
+                      href={`/reports/${report.id}`}
+                      className="text-[11px] font-bold text-brand-accent hover:underline flex items-center gap-1"
+                    >
+                      {t('card.details') || 'View Details'} →
+                    </Link>
+                  </div>
                 </div>
-              </div>
-            </Popup>
-          </Marker>
-        ))}
+              </Popup>
+            </Marker>
+          )
+        })}
       </MapContainer>
 
       {/* Floating Controls: Lock/Unlock Gesture Mode, Style Switcher & Fit Bounds */}

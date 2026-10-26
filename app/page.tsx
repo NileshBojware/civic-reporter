@@ -159,9 +159,10 @@ export default function LandingPage() {
               </span>
 
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[54px] font-black text-slate-900 dark:text-white tracking-tight leading-[1.15] sm:leading-[1.1] mb-4 sm:mb-5">
-                Report Civic <br className="hidden sm:inline" />
-                Problems. <br />
-                <span className="text-[#177f95] dark:text-[#269eb8]">Track Solutions in Real Time.</span>
+                {t('hero.title1') || 'Report Civic Problems.'} <br className="hidden sm:inline" />{' '}
+                <span className="text-[#177f95] dark:text-[#269eb8]">
+                  {t('hero.title2') || 'Track Solutions in Real Time.'}
+                </span>
               </h1>
 
               <p className="text-sm sm:text-base lg:text-lg text-slate-600 dark:text-slate-300 mb-6 sm:mb-8 max-w-lg leading-relaxed font-normal">
@@ -197,8 +198,8 @@ export default function LandingPage() {
                     <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-[11px] font-bold text-slate-900 dark:text-white leading-tight truncate">Add Photo</div>
-                    <div className="text-[9px] text-slate-500 dark:text-slate-400 leading-tight truncate">Show the issue</div>
+                    <div className="text-[11px] font-bold text-slate-900 dark:text-white leading-tight truncate">{t('hero.addPhoto') || 'Add Photo'}</div>
+                    <div className="text-[9px] text-slate-500 dark:text-slate-400 leading-tight truncate">{t('hero.showIssue') || 'Show the issue'}</div>
                   </div>
                 </Link>
 
@@ -210,8 +211,8 @@ export default function LandingPage() {
                     <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-[11px] font-bold text-slate-900 dark:text-white leading-tight truncate">Add Location</div>
-                    <div className="text-[9px] text-slate-500 dark:text-slate-400 leading-tight truncate">Pin on map</div>
+                    <div className="text-[11px] font-bold text-slate-900 dark:text-white leading-tight truncate">{t('hero.addLocation') || 'Add Location'}</div>
+                    <div className="text-[9px] text-slate-500 dark:text-slate-400 leading-tight truncate">{t('hero.pinMap') || 'Pin on map'}</div>
                   </div>
                 </Link>
 
@@ -223,8 +224,8 @@ export default function LandingPage() {
                     <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-[11px] font-bold text-slate-900 dark:text-white leading-tight truncate">Track Progress</div>
-                    <div className="text-[9px] text-slate-500 dark:text-slate-400 leading-tight truncate">Real-time updates</div>
+                    <div className="text-[11px] font-bold text-slate-900 dark:text-white leading-tight truncate">{t('hero.trackProgress') || 'Track Progress'}</div>
+                    <div className="text-[9px] text-slate-500 dark:text-slate-400 leading-tight truncate">{t('hero.realtimeUpdates') || 'Real-time updates'}</div>
                   </div>
                 </Link>
 
@@ -236,8 +237,8 @@ export default function LandingPage() {
                     <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-[11px] font-bold text-slate-900 dark:text-white leading-tight truncate">Stronger City</div>
-                    <div className="text-[9px] text-slate-500 dark:text-slate-400 leading-tight truncate">Together we build</div>
+                    <div className="text-[11px] font-bold text-slate-900 dark:text-white leading-tight truncate">{t('hero.strongerCity') || 'Stronger City'}</div>
+                    <div className="text-[9px] text-slate-500 dark:text-slate-400 leading-tight truncate">{t('hero.togetherBuild') || 'Together we build'}</div>
                   </div>
                 </Link>
               </div>

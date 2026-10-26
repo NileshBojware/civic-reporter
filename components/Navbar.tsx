@@ -9,6 +9,7 @@ import { useLanguage } from '@/lib/LanguageContext'
 import { LANGUAGES } from '@/lib/translations'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { DEPARTMENTS, getAdminDepartment } from '@/lib/departments'
+import { getLocalizedNotification } from '@/lib/contentTranslator'
 
 export function Navbar() {
   const pathname = usePathname()
@@ -327,7 +328,11 @@ export function Navbar() {
           {user && (
             <div className="relative">
               <button
-                onClick={() => setNotificationsOpen(!notificationsOpen)}
+                onClick={() => {
+                  setMobileMenuOpen(false)
+                  setLangDropdownOpen(false)
+                  setNotificationsOpen(!notificationsOpen)
+                }}
                 className="relative flex items-center justify-center p-1.5 sm:p-2 rounded-full hover:bg-surface-soft text-muted hover:text-ink border border-hairline transition-all focus:outline-none cursor-pointer"
                 title={t('nav.notifications')}
               >
@@ -343,10 +348,10 @@ export function Navbar() {
               {notificationsOpen && (
                 <>
                   <div 
-                    className="fixed inset-0 z-40" 
+                    className="fixed inset-0 z-40 bg-black/25 sm:bg-transparent backdrop-blur-[1px] sm:backdrop-blur-none" 
                     onClick={() => setNotificationsOpen(false)} 
                   />
-                  <div className="absolute right-0 mt-2 w-80 rounded-lg bg-canvas border border-hairline p-3 shadow-xl z-50 animate-in fade-in slide-in-from-top-1 duration-200">
+                  <div className="fixed left-3 right-3 top-[4.25rem] max-w-sm mx-auto sm:max-w-none sm:mx-0 sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80 rounded-xl bg-canvas border border-hairline p-3 shadow-2xl z-50 animate-in fade-in slide-in-from-top-1 duration-200">
                     <div className="flex items-center justify-between pb-2 border-b border-hairline mb-2">
                       <span className="text-title-sm font-bold text-ink flex items-center gap-2">
                         {t('nav.notifications')}
@@ -366,7 +371,7 @@ export function Navbar() {
                       )}
                     </div>
 
-                    <div className="max-h-64 overflow-y-auto space-y-1.5">
+                    <div className="max-h-[60vh] sm:max-h-64 overflow-y-auto space-y-1.5">
                       {notifications.length === 0 ? (
                         <div className="py-6 text-center text-body-sm text-muted">
                           {t('nav.noNotifications')}
@@ -376,6 +381,7 @@ export function Navbar() {
                           const targetUrl = profile?.role === 'admin' 
                             ? `/admin/reports/${notif.report_id}`
                             : `/reports/${notif.report_id}`
+                          const localizedNotif = getLocalizedNotification(notif, language)
 
                           return (
                             <Link
@@ -393,14 +399,14 @@ export function Navbar() {
                             >
                               <div className="flex justify-between items-start gap-1">
                                 <span className={`text-[11px] font-bold ${!notif.is_read ? 'text-brand-accent' : 'text-muted'}`}>
-                                  {t(`notification.${notif.type}`)}
+                                  {t(`notification.${notif.type}`) || localizedNotif.title}
                                 </span>
                                 <span className="text-[9px] text-muted shrink-0">
                                   {new Date(notif.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                               </div>
                               <p className="text-[11px] text-body line-clamp-2 mt-1 leading-relaxed">
-                                {notif.message}
+                                {localizedNotif.message}
                               </p>
                             </Link>
                           )
@@ -431,7 +437,11 @@ export function Navbar() {
           {/* Language Selector */}
           <div className="relative">
             <button
-              onClick={() => setLangDropdownOpen(!langDropdownOpen)}
+              onClick={() => {
+                setNotificationsOpen(false)
+                setMobileMenuOpen(false)
+                setLangDropdownOpen(!langDropdownOpen)
+              }}
               className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 rounded-full bg-canvas border border-hairline text-body hover:text-ink text-xs sm:text-body-sm font-semibold transition-all focus:outline-none cursor-pointer"
             >
               <Globe className="w-3.5 h-3.5 text-muted shrink-0" />
@@ -472,25 +482,19 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-4">
             {user ? (
               <div className="flex items-center gap-2">
-                {/* User identity pill — non-interactive, purely informational */}
-                <div className="flex items-center gap-2 text-ink bg-surface-soft border border-hairline px-3 py-1.5 rounded-lg text-body-sm font-medium">
-                  {isAdmin ? (
-                    <>
-                      <Shield className="w-3.5 h-3.5 text-[#177f95] dark:text-[#269eb8] shrink-0" />
-                      <span className="font-bold text-ink">
-                        {userDept ? `${userDept.shortName} Admin` : 'Admin'}
-                      </span>
-                    </>
-                  ) : (
-                    <>
-                      <User className="w-3.5 h-3.5 text-muted shrink-0" />
-                      <span>{profile?.full_name || t('nav.citizen')}</span>
-                    </>
-                  )}
-                </div>
+                {/* User identity pill — only shown for regular citizens, omitted for dept admin */}
+                {!isAdmin && (
+                  <div className="flex items-center gap-2 text-ink bg-surface-soft border border-hairline px-3 py-1.5 rounded-lg text-body-sm font-medium">
+                    <User className="w-3.5 h-3.5 text-muted shrink-0" />
+                    <span>{profile?.full_name || t('nav.citizen')}</span>
+                  </div>
+                )}
 
                 {/* Avatar circle showing initials */}
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-strong border border-hairline text-ink font-bold text-xs select-none shrink-0">
+                <div 
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-strong border border-hairline text-ink font-bold text-xs select-none shrink-0"
+                  title={userDept ? `${userDept.shortName} Admin` : (profile?.full_name || t('nav.citizen'))}
+                >
                   {getInitials()}
                 </div>
 
@@ -524,7 +528,11 @@ export function Navbar() {
 
           {/* Mobile Menu Toggle */}
           <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            onClick={() => {
+              setNotificationsOpen(false)
+              setLangDropdownOpen(false)
+              setMobileMenuOpen(!mobileMenuOpen)
+            }}
             className="p-1.5 sm:p-2 -mr-1 sm:-mr-2 text-muted hover:text-ink md:hidden transition cursor-pointer"
           >
             {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}

@@ -25,6 +25,7 @@ import { CIVIC_CATEGORIES, getCategoryMeta } from '@/lib/categories'
 import { getDepartmentByCategory } from '@/lib/departments'
 import { VoiceInputButton } from '@/components/VoiceInputButton'
 import { classifyImageWithStatus, ClassificationResult, resizeImageForAI, fileToBase64 } from '@/lib/imageClassifier'
+import { getLocalizedDepartment, getLocalizedSubcategory } from '@/lib/contentTranslator'
 
 
 export default function ReportPage() {
@@ -32,7 +33,7 @@ export default function ReportPage() {
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
   const [loadingAuth, setLoadingAuth] = useState(true)
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
 
   // Form State
   const [title, setTitle] = useState('')
@@ -737,15 +738,16 @@ export default function ReportPage() {
             {/* Department Destination Routing Info */}
             {(() => {
               const targetDept = getDepartmentByCategory(category)
+              const localizedDept = getLocalizedDepartment(targetDept, language)
               return (
                 <div className="mt-2 px-3 py-1.5 rounded-lg bg-surface-soft border border-hairline flex items-center justify-between gap-2 text-xs">
                   <div className="flex items-center gap-1.5 text-muted">
                     <Building2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
-                    <span>Target Department:</span>
-                    <strong className="text-ink">{targetDept.name}</strong>
+                    <span>{t('form.targetDepartment') || 'Target Department:'}</span>
+                    <strong className="text-ink">{localizedDept.name}</strong>
                   </div>
                   <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${targetDept.badgeColor}`}>
-                    {targetDept.shortName} Admin
+                    {localizedDept.shortName} {t('nav.admin') || 'Admin'}
                   </span>
                 </div>
               )
@@ -763,13 +765,14 @@ export default function ReportPage() {
                     onClick={() => setSelectedSubcategory('')}
                     className="text-[10px] text-muted hover:text-ink font-semibold"
                   >
-                    Clear selection
+                    {t('form.clearSelection') || 'Clear selection'}
                   </button>
                 )}
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {getCategoryMeta(category).subcategories.map((sub) => {
                   const isSelected = selectedSubcategory === sub
+                  const localizedSub = getLocalizedSubcategory(sub, language)
                   return (
                     <button
                       key={sub}
@@ -778,8 +781,9 @@ export default function ReportPage() {
                         setSelectedSubcategory(sub)
                         // If title is empty or was previously a subcategory title, update title
                         const currentSubs = getCategoryMeta(category).subcategories
-                        if (!title || currentSubs.includes(title)) {
-                          setTitle(sub)
+                        const currentLocalizedSubs = currentSubs.map((s) => getLocalizedSubcategory(s, language))
+                        if (!title || currentSubs.includes(title) || currentLocalizedSubs.includes(title)) {
+                          setTitle(localizedSub)
                         }
                       }}
                       className={`px-3 py-1.5 rounded-pill text-xs font-semibold border transition-all duration-150 cursor-pointer ${
@@ -788,7 +792,7 @@ export default function ReportPage() {
                           : 'bg-canvas text-body hover:text-ink border-hairline hover:border-muted/50 hover:bg-surface-soft'
                       }`}
                     >
-                      {isSelected ? '✓ ' : ''}{sub}
+                      {isSelected ? '✓ ' : ''}{localizedSub}
                     </button>
                   )
                 })}

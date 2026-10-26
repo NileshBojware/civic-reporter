@@ -4,13 +4,14 @@ import React, { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { ArrowLeft, Shield, CheckCircle, XCircle, Play, AlertCircle, FileText, Image as ImageIcon, AlertTriangle, ShieldCheck, Building2, UserCheck, Lock, ShieldAlert } from 'lucide-react'
+import { ArrowLeft, Shield, CheckCircle, XCircle, Play, AlertCircle, FileText, Image as ImageIcon, AlertTriangle, ShieldCheck, Building2, UserCheck, Lock, ShieldAlert, Camera, RefreshCw, X, Upload, Trash2 } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import { StatusBadge } from '@/components/StatusBadge'
 import imageCompression from 'browser-image-compression'
 import { useLanguage } from '@/lib/LanguageContext'
 import { getCategoryStyles, getCategoryFormattedLabel } from '@/lib/categories'
-import { DEPARTMENTS, getDepartmentByCategory, getAdminDepartment } from '@/lib/departments'
+import { DEPARTMENTS, getDepartmentByCategory, getAdminDepartment, isCategoryInDepartment } from '@/lib/departments'
+import { getLocalizedReport } from '@/lib/contentTranslator'
 
 // Dynamically load the Leaflet Map
 const MapOverview = dynamic(() => import('@/components/MapOverview'), {
@@ -42,6 +43,14 @@ export default function AdminReportDetailPage() {
   const [compressing, setCompressing] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+
+  // Camera states & refs
+  const [cameraActive, setCameraActive] = useState(false)
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null)
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment')
+  const videoRef = React.useRef<HTMLVideoElement | null>(null)
+  const fileInputRef = React.useRef<HTMLInputElement | null>(null)
+  const cameraInputRef = React.useRef<HTMLInputElement | null>(null)
 
   const fetchReportDetails = async () => {
     try {
@@ -101,14 +110,21 @@ export default function AdminReportDetailPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
-  const mockReportList = report ? [report] : []
+  const localized = report ? getLocalizedReport(report, language) : null
+  const mockReportList = localized ? [localized] : []
 
-  const handleResolutionPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    if (!files || files.length === 0) return
+  // Cleanup camera stream on unmount
+  useEffect(() => {
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach((track) => track.stop())
+      }
+    }
+  }, [cameraStream])
 
-    const file = files[0]
+  const processResolutionPhoto = async (file: File) => {
     setCompressing(true)
+    setError('')
 
     const options = {
       maxSizeMB: 0.15,
@@ -131,6 +147,81 @@ export default function AdminReportDetailPage() {
     } finally {
       setCompressing(false)
     }
+  }
+
+  const handleResolutionPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (!files || files.length === 0) return
+    await processResolutionPhoto(files[0])
+  }
+
+  const startCamera = async (mode: 'user' | 'environment' = 'environment') => {
+    setError('')
+    try {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach((track) => track.stop())
+      }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: mode, width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false,
+      })
+      setCameraStream(stream)
+      setCameraActive(true)
+
+      setTimeout(() => {
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream
+        }
+      }, 50)
+    } catch (err) {
+      console.warn('Live camera getUserMedia failed, triggering native camera input:', err)
+      if (cameraInputRef.current) {
+        cameraInputRef.current.click()
+      } else {
+        setError('Camera permission denied or camera not supported.')
+      }
+    }
+  }
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((track) => track.stop())
+      setCameraStream(null)
+    }
+    setCameraActive(false)
+  }
+
+  const toggleCamera = () => {
+    const nextMode = facingMode === 'environment' ? 'user' : 'environment'
+    setFacingMode(nextMode)
+    startCamera(nextMode)
+  }
+
+  const capturePhoto = () => {
+    if (!videoRef.current) return
+    const video = videoRef.current
+    const canvas = document.createElement('canvas')
+    canvas.width = video.videoWidth || 1280
+    canvas.height = video.videoHeight || 720
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+
+    canvas.toBlob(async (blob) => {
+      if (!blob) return
+      const file = new File([blob], `admin_resolution_${Date.now()}.jpg`, { type: 'image/jpeg' })
+      stopCamera()
+      await processResolutionPhoto(file)
+    }, 'image/jpeg', 0.95)
+  }
+
+  const removeResolutionPhoto = () => {
+    setResolutionPhoto(null)
+    setResolutionPhotoUrl('')
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    if (cameraInputRef.current) cameraInputRef.current.value = ''
   }
 
   const handleStartFix = async () => {
@@ -363,7 +454,7 @@ export default function AdminReportDetailPage() {
   const isDirectJurisdiction = Boolean(
     currentAdminDept?.id === 'grievance' ||
     (currentAdminDept && currentAdminDept.id === reportDept.id) ||
-    (currentAdminDept && currentAdminDept.categories.includes(report.category))
+    (currentAdminDept && isCategoryInDepartment(report.category, currentAdminDept.id))
   )
 
   return (
@@ -422,8 +513,8 @@ export default function AdminReportDetailPage() {
             </div>
 
             <div>
-              <h2 className="text-title-lg font-bold text-ink mb-2">{report.title}</h2>
-              <p className="text-body-md text-body leading-relaxed">{report.description || 'No description.'}</p>
+              <h2 className="text-title-lg font-bold text-ink mb-2">{localized?.title || report.title}</h2>
+              <p className="text-body-md text-body leading-relaxed">{localized?.description || report.description || 'No description.'}</p>
             </div>
 
             <div className="p-4 rounded-lg bg-canvas border border-hairline flex gap-3">
@@ -571,38 +662,162 @@ export default function AdminReportDetailPage() {
                     </div>
 
                     <div>
-                      <label className="text-[10px] font-bold text-muted block mb-1.5">Resolution Photo Evidence *</label>
-                      <div className="flex flex-col items-center justify-center border-2 border-dashed border-hairline hover:border-muted rounded-md p-4 transition bg-canvas relative min-h-[140px]">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          required
-                          onChange={handleResolutionPhotoUpload}
-                          className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
-                        />
-                        {resolutionPhotoUrl ? (
-                          <div className="w-full text-center z-20">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="text-[10px] font-bold text-muted block uppercase tracking-wider">
+                          Resolution Photo Evidence *
+                        </label>
+                        {resolutionPhotoUrl && !cameraActive && (
+                          <button
+                            type="button"
+                            onClick={removeResolutionPhoto}
+                            className="text-[11px] text-status-rejected hover:underline font-semibold flex items-center gap-1 cursor-pointer"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Remove Photo</span>
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Hidden file inputs: one standard file picker and one direct camera capture */}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleResolutionPhotoUpload}
+                        className="hidden"
+                      />
+                      <input
+                        ref={cameraInputRef}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handleResolutionPhotoUpload}
+                        className="hidden"
+                      />
+
+                      {cameraActive ? (
+                        /* Live Camera Viewfinder */
+                        <div className="relative w-full rounded-xl overflow-hidden border border-hairline bg-slate-950 p-2 flex flex-col items-center shadow-lg">
+                          <video
+                            ref={videoRef}
+                            autoPlay
+                            playsInline
+                            className="w-full max-h-[300px] object-cover rounded-lg"
+                          />
+                          <div className="absolute bottom-4 left-0 right-0 flex items-center justify-center gap-6 z-20">
+                            <button
+                              type="button"
+                              onClick={stopCamera}
+                              className="p-2.5 rounded-full bg-slate-900/90 text-white/80 hover:text-white border border-slate-700 cursor-pointer shadow-lg hover:scale-105 transition"
+                              title="Cancel Camera"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                            
+                            <button
+                              type="button"
+                              onClick={capturePhoto}
+                              className="w-13 h-13 rounded-full bg-white hover:bg-slate-100 border-4 border-slate-900 flex items-center justify-center transition hover:scale-110 shadow-2xl cursor-pointer"
+                              title="Capture Photo"
+                            >
+                              <div className="w-5 h-5 rounded-full bg-primary animate-pulse" />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={toggleCamera}
+                              className="p-2.5 rounded-full bg-slate-900/90 text-white/80 hover:text-white border border-slate-700 cursor-pointer shadow-lg hover:scale-105 transition"
+                              title="Switch Camera (Front/Back)"
+                            >
+                              <RefreshCw className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          <div className="absolute top-3 left-3 bg-slate-900/90 text-[10px] font-bold text-white px-2.5 py-1 rounded-full border border-slate-700 flex items-center gap-1.5 shadow-lg">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                            <span>Live Camera Active</span>
+                          </div>
+                        </div>
+                      ) : resolutionPhotoUrl ? (
+                        /* Preview of captured/selected photo */
+                        <div className="p-4 rounded-xl border border-hairline bg-canvas text-center space-y-3">
+                          <div className="relative inline-block">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={resolutionPhotoUrl}
                               alt="Resolution evidence preview"
-                              className="max-h-36 rounded-md mx-auto border border-hairline mb-2 object-contain"
+                              className="max-h-44 rounded-lg mx-auto border border-hairline object-contain shadow-sm"
                             />
-                            <span className="text-[9px] text-muted block font-semibold">
-                              Resolution photo uploaded.
+                            <span className="inline-flex items-center gap-1 absolute top-2 right-2 px-2 py-0.5 rounded-full bg-emerald-500/90 text-white text-[10px] font-bold shadow-sm">
+                              <CheckCircle className="w-3 h-3" /> Ready
                             </span>
                           </div>
-                        ) : (
-                          <div className="text-center z-20">
-                            <ImageIcon className="w-8 h-8 text-muted mx-auto mb-2" />
-                            <span className="text-caption font-semibold text-ink block">Upload Completion Photo</span>
-                            <span className="text-[9px] text-muted">Compacted for database storage limits</span>
+
+                          <div className="flex flex-wrap items-center justify-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => startCamera()}
+                              className="btn-secondary h-8 px-3 text-[11px] font-semibold flex items-center gap-1.5 rounded-lg"
+                            >
+                              <Camera className="w-3.5 h-3.5 text-primary" />
+                              <span>Retake with Camera</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => fileInputRef.current?.click()}
+                              className="btn-secondary h-8 px-3 text-[11px] font-semibold flex items-center gap-1.5 rounded-lg"
+                            >
+                              <Upload className="w-3.5 h-3.5 text-muted" />
+                              <span>Choose from Files</span>
+                            </button>
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      ) : (
+                        /* Choose Camera or File */
+                        <div className="border-2 border-dashed border-hairline hover:border-primary/50 rounded-xl p-5 transition bg-canvas space-y-3 text-center">
+                          <div className="flex justify-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                              <Camera className="w-5 h-5" />
+                            </div>
+                            <div className="w-10 h-10 rounded-full bg-surface-soft flex items-center justify-center text-muted">
+                              <ImageIcon className="w-5 h-5" />
+                            </div>
+                          </div>
+
+                          <div>
+                            <span className="text-body-sm font-bold text-ink block">
+                              Add Resolution Proof Photo
+                            </span>
+                            <span className="text-[11px] text-muted">
+                              Take a live photo on site or upload completion image from device
+                            </span>
+                          </div>
+
+                          <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => startCamera()}
+                              className="btn-primary w-full sm:w-auto h-9 px-4 text-xs font-bold flex items-center justify-center gap-2 shadow-sm"
+                            >
+                              <Camera className="w-4 h-4" />
+                              <span>Take Photo with Camera</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => fileInputRef.current?.click()}
+                              className="btn-secondary w-full sm:w-auto h-9 px-4 text-xs font-semibold flex items-center justify-center gap-2"
+                            >
+                              <Upload className="w-4 h-4 text-muted" />
+                              <span>Upload from Files</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       {compressing && (
                         <span className="text-[10px] text-brand-accent font-bold block mt-1.5 text-center animate-pulse">
-                          Compressing resolution file...
+                          Optimizing image for database storage...
                         </span>
                       )}
                     </div>
@@ -659,7 +874,7 @@ export default function AdminReportDetailPage() {
             <div className="text-[10px] text-muted font-mono space-y-2 mt-2">
               <div className="flex items-start gap-1.5">
                 <span className="font-bold text-ink shrink-0">{t('detail.address')}:</span>
-                <span className="leading-relaxed">{report.address}</span>
+                <span className="leading-relaxed">{localized?.address || report.address}</span>
               </div>
               <div className="flex items-center gap-1.5 border-t border-hairline-soft pt-2">
                 <span className="font-bold text-ink">Lat:</span>

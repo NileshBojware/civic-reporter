@@ -15,14 +15,14 @@ import {
   Filter, 
   Layers, 
   UserCheck, 
-  ExternalLink,
-  ChevronDown
+  ExternalLink
 } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import { StatusBadge } from '@/components/StatusBadge'
 import { useLanguage } from '@/lib/LanguageContext'
-import { DEPARTMENTS, getAdminDepartment, getDepartmentByCategory, Department } from '@/lib/departments'
-import { getCategoryFormattedLabel, getCategoryStyles } from '@/lib/categories'
+import { DEPARTMENTS, getAdminDepartment, getDepartmentByCategory, isCategoryInDepartment, Department } from '@/lib/departments'
+import { getCategoryFormattedLabel, getCategoryStyles, normalizeCategoryKey } from '@/lib/categories'
+import { getLocalizedReport } from '@/lib/contentTranslator'
 
 export default function AdminDashboardPage() {
   const router = useRouter()
@@ -32,7 +32,7 @@ export default function AdminDashboardPage() {
   const [profile, setProfile] = useState<any>(null)
   const [activeDept, setActiveDept] = useState<Department>(DEPARTMENTS[0])
   const [scopeFilter, setScopeFilter] = useState<'department' | 'all'>('department')
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
 
   // Filters and search
   const [searchTerm, setSearchTerm] = useState('')
@@ -130,7 +130,7 @@ export default function AdminDashboardPage() {
   }
 
   // Calculate statistics for active department and entire municipality
-  const deptReports = reports.filter((r) => activeDept.categories.includes(r.category))
+  const deptReports = reports.filter((r) => isCategoryInDepartment(r.category, activeDept.id))
   
   const statsReports = scopeFilter === 'department' ? deptReports : reports
   const totalCount = statsReports.length
@@ -142,12 +142,12 @@ export default function AdminDashboardPage() {
   // Filter list
   const filteredReports = reports.filter((report) => {
     // Scope filter
-    if (scopeFilter === 'department' && !activeDept.categories.includes(report.category)) {
+    if (scopeFilter === 'department' && !isCategoryInDepartment(report.category, activeDept.id)) {
       return false
     }
 
     // Category subfilter
-    if (categorySubFilter !== 'all' && report.category !== categorySubFilter) {
+    if (categorySubFilter !== 'all' && normalizeCategoryKey(report.category) !== normalizeCategoryKey(categorySubFilter)) {
       return false
     }
 
@@ -192,41 +192,12 @@ export default function AdminDashboardPage() {
             </p>
           </div>
 
-          {/* Department Switcher Dropdown for Officers */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0">
-            <div className="space-y-1 w-full sm:w-auto">
-              <label className="text-[11px] font-bold text-muted uppercase tracking-wider block">
-                Switch Department Portal
-              </label>
-              <div className="relative">
-                <select
-                  value={activeDept.id}
-                  onChange={(e) => {
-                    const found = DEPARTMENTS.find(d => d.id === e.target.value)
-                    if (found) {
-                      setActiveDept(found)
-                      setCategorySubFilter('all')
-                    }
-                  }}
-                  className="w-full sm:w-64 pl-3 pr-8 py-2 text-xs font-semibold rounded-lg bg-canvas border border-hairline text-ink focus:outline-none focus:border-primary shadow-sm cursor-pointer"
-                >
-                  {DEPARTMENTS.map((dept) => (
-                    <option key={dept.id} value={dept.id}>
-                      {dept.name} ({dept.shortName})
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="w-4 h-4 text-muted absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
-            </div>
-          </div>
-
         </div>
 
         {/* Department Purview Subcategories Badges */}
         <div className="pt-4 border-t border-hairline/60 flex flex-wrap items-center gap-2">
           <span className="text-xs font-semibold text-muted mr-1">Jurisdiction Categories:</span>
-          {activeDept.categories.map((catKey) => (
+          {Array.from(new Set(activeDept.categories.map(c => normalizeCategoryKey(c)))).map((catKey) => (
             <span
               key={catKey}
               className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${getCategoryStyles(catKey)}`}
@@ -359,14 +330,14 @@ export default function AdminDashboardPage() {
                 <option value="rejected">{t('status.rejected')}</option>
               </select>
 
-              {scopeFilter === 'department' && activeDept.categories.length > 1 && (
+              {scopeFilter === 'department' && Array.from(new Set(activeDept.categories.map(c => normalizeCategoryKey(c)))).length > 1 && (
                 <select
                   value={categorySubFilter}
                   onChange={(e) => setCategorySubFilter(e.target.value)}
                   className="px-2.5 h-9 rounded-lg bg-canvas border border-hairline text-xs text-body font-semibold focus:outline-none focus:border-primary cursor-pointer"
                 >
                   <option value="all">All Subcategories</option>
-                  {activeDept.categories.map((c) => (
+                  {Array.from(new Set(activeDept.categories.map(c => normalizeCategoryKey(c)))).map((c) => (
                     <option key={c} value={c}>{getCategoryFormattedLabel(c)}</option>
                   ))}
                 </select>
@@ -401,14 +372,16 @@ export default function AdminDashboardPage() {
                     const isDirectJurisdiction = Boolean(
                       adminDept.id === 'grievance' ||
                       adminDept.id === reportDept.id ||
-                      adminDept.categories.includes(report.category)
+                      isCategoryInDepartment(report.category, adminDept.id)
                     )
+
+                    const localized = getLocalizedReport(report, language)
 
                     return (
                       <tr key={report.id} className="hover:bg-surface-soft/40 transition bg-canvas">
                         <td className="p-3.5 max-w-[220px] min-w-[160px]">
-                          <span className="font-bold text-ink block truncate">{report.title}</span>
-                          <span className="text-[11px] text-muted block truncate mt-0.5">{report.address}</span>
+                          <span className="font-bold text-ink block truncate">{localized.title}</span>
+                          <span className="text-[11px] text-muted block truncate mt-0.5">{localized.address}</span>
                         </td>
                         
                         <td className="p-3.5">
@@ -424,7 +397,7 @@ export default function AdminDashboardPage() {
                               )}
                             </div>
                             <span className="text-xs text-body font-medium block">
-                              {getCategoryFormattedLabel(report.category)}
+                              {t('category.' + report.category) || getCategoryFormattedLabel(report.category)}
                             </span>
                           </div>
                         </td>
@@ -446,7 +419,7 @@ export default function AdminDashboardPage() {
                                 : "btn-secondary h-8 px-3 py-1 text-[11px] inline-flex items-center gap-1 rounded-lg font-medium text-muted hover:text-ink"
                             }
                           >
-                            <span>{isDirectJurisdiction ? 'Triage' : 'View (Read-Only)'}</span>
+                            <span>{isDirectJurisdiction ? 'Triage' : 'View'}</span>
                             <ArrowUpRight className="w-3 h-3" />
                           </Link>
                         </td>
@@ -473,7 +446,7 @@ export default function AdminDashboardPage() {
             <div className="space-y-1.5 max-h-72 overflow-y-auto pr-1">
               {DEPARTMENTS.map((dept) => {
                 const isSelected = activeDept.id === dept.id
-                const deptCount = reports.filter(r => dept.categories.includes(r.category)).length
+                const deptCount = reports.filter(r => isCategoryInDepartment(r.category, dept.id)).length
 
                 return (
                   <button
