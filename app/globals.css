@@ -21,12 +21,28 @@
   --color-on-primary: #ffffff;
   --color-on-dark: #ffffff;
   --color-on-dark-soft: #94a3b8;
-  --color-brand-accent: #2563eb;
+  --color-brand-accent: #177f95;
+  --color-sheher: #00bf63;
+  --color-azure: #177f95;
+  --color-azure-light: #269eb8;
+  --color-azure-dark: #126374;
+  
+  --color-blue-50: #eef8fa;
+  --color-blue-100: #d5f1f5;
+  --color-blue-200: #afe3eb;
+  --color-blue-300: #78cdde;
+  --color-blue-400: #269eb8;
+  --color-blue-500: #177f95;
+  --color-blue-600: #177f95;
+  --color-blue-700: #125666;
+  --color-blue-800: #144754;
+  --color-blue-900: #153c46;
+  --color-blue-950: #09272f;
   
   --color-status-reported: #f59e0b;
-  --color-status-verified: #3b82f6;
+  --color-status-verified: #177f95;
   --color-status-inprogress: #8b5cf6;
-  --color-status-resolved: #10b981;
+  --color-status-resolved: #00bf63;
   --color-status-rejected: #ef4444;
 
   --color-category-waste: #fb923c;
@@ -100,14 +116,26 @@
   --color-primary-disabled: #1e293b;
   --color-on-primary: #070a12;
 
-  /* Brand accent stays blue */
-  --color-brand-accent: #3b82f6;
+  /* Brand accent and azure */
+  --color-brand-accent: #269eb8;
+  --color-azure: #269eb8;
+  --color-blue-50: #0a252c;
+  --color-blue-100: #0f3640;
+  --color-blue-200: #144956;
+  --color-blue-300: #1b6274;
+  --color-blue-400: #269eb8;
+  --color-blue-500: #269eb8;
+  --color-blue-600: #177f95;
+  --color-blue-700: #78cdde;
+  --color-blue-800: #afe3eb;
+  --color-blue-900: #d5f1f5;
+  --color-blue-950: #09272f;
 
   /* Status colours */
   --color-status-reported: #fbbf24;
-  --color-status-verified: #60a5fa;
+  --color-status-verified: #269eb8;
   --color-status-inprogress: #a78bfa;
-  --color-status-resolved: #34d399;
+  --color-status-resolved: #00bf63;
   --color-status-rejected: #f87171;
 
   --color-success: #34d399;
@@ -135,6 +163,16 @@ body {
   background: var(--glass-bg);
   backdrop-filter: blur(12px);
   border: 1px solid var(--glass-border);
+}
+
+/* Subtle, low-intensity blurred black shadow behind SheherCare brand text */
+.shehercare-brand-shadow {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.14), 0 2px 6px rgba(0, 0, 0, 0.08);
+  transition: text-shadow 0.2s ease;
+}
+
+.dark .shehercare-brand-shadow {
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.35);
 }
 
 /* Panoramic background slow sliding animation */

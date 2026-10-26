@@ -50,26 +50,40 @@ export default function NotificationsPage() {
   const [markingAll, setMarkingAll] = useState(false)
 
   const userId = user?.id || profile?.id
-  const { permission, isSubscribed, isLoading: pushLoading, subscribe, unsubscribe } =
-    usePushNotifications(userId ?? null)
+  const {
+    permission,
+    isSubscribed,
+    isLoading: pushLoading,
+    error: pushError,
+    statusMessage: pushStatus,
+    subscribe,
+    unsubscribe,
+    sendTestNotification,
+  } = usePushNotifications(userId ?? null)
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     const init = async () => {
+      let sessionUser: any = null
       if (isSupabaseConfigured && supabase) {
         const { data } = await supabase.auth.getSession()
-        const sessionUser = data.session?.user ?? null
-        if (!sessionUser) { router.replace('/login'); return }
-        setUser(sessionUser)
+        sessionUser = data.session?.user ?? null
+      }
+      if (!sessionUser) {
+        const raw = typeof window !== 'undefined' ? localStorage.getItem('civic_reporter_user') : null
+        if (raw) sessionUser = JSON.parse(raw)
+      }
+      if (!sessionUser) {
+        router.replace('/login')
+        return
+      }
+      setUser(sessionUser)
+      if (sessionUser.id && isSupabaseConfigured && supabase) {
         const { data: prof } = await supabase
           .from('profiles').select('*').eq('id', sessionUser.id).maybeSingle()
-        setProfile(prof)
+        setProfile(prof || sessionUser)
       } else {
-        const raw = localStorage.getItem('civic_reporter_user')
-        if (!raw) { router.replace('/login'); return }
-        const mock = JSON.parse(raw)
-        setUser(mock)
-        setProfile(mock)
+        setProfile(sessionUser)
       }
     }
     init()
@@ -170,44 +184,76 @@ export default function NotificationsPage() {
 
         {/* Push notification opt-in card */}
         {'Notification' in (typeof window !== 'undefined' ? window : {}) && (
-          <div className="p-4 rounded-lg border border-hairline bg-surface-card flex items-start gap-4">
-            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-brand-accent/10 flex items-center justify-center">
-              <BellRing className="w-5 h-5 text-brand-accent" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-body-sm font-semibold text-ink">
-                {isSubscribed ? 'Push notifications are enabled' : 'Enable push notifications'}
-              </p>
-              <p className="text-caption text-muted mt-0.5 leading-relaxed">
-                {isSubscribed
-                  ? 'You\'ll receive alerts even when the browser is closed.'
-                  : 'Get notified about your report status updates even when the app is closed.'}
-              </p>
-              {permission === 'denied' && (
-                <p className="text-caption text-error mt-1 font-semibold">
-                  Notifications are blocked. Please enable them in your browser settings.
+          <div className="p-4 rounded-xl border border-hairline bg-surface-card flex flex-col gap-3 shadow-xs">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-[#177f95]/10 dark:bg-[#177f95]/20 flex items-center justify-center">
+                <BellRing className="w-5 h-5 text-[#177f95] dark:text-[#269eb8]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-body-sm font-semibold text-ink">
+                  {isSubscribed ? 'Push notifications are active' : 'Enable push notifications'}
                 </p>
+                <p className="text-caption text-muted mt-0.5 leading-relaxed">
+                  {isSubscribed
+                    ? "You will receive real-time status alerts whenever issues are updated."
+                    : 'Get instant browser notifications about report status changes and municipal actions.'}
+                </p>
+                {permission === 'denied' && (
+                  <p className="text-caption text-error mt-1.5 font-medium bg-red-500/10 border border-red-500/20 rounded-md p-2">
+                    ⚠️ Notifications are blocked in your browser. Click the lock/site settings icon in your browser address bar, set Notifications to <strong>Allow</strong>, and refresh this page.
+                  </p>
+                )}
+                {pushError && (
+                  <p className="text-caption text-error mt-1.5 font-medium">
+                    {pushError}
+                  </p>
+                )}
+                {pushStatus && (
+                  <p className="text-caption text-emerald-600 dark:text-emerald-400 mt-1.5 font-medium flex items-center gap-1">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> {pushStatus}
+                  </p>
+                )}
+              </div>
+
+              {permission !== 'denied' && (
+                <div className="flex items-center gap-2 shrink-0">
+                  {isSubscribed && (
+                    <button
+                      onClick={sendTestNotification}
+                      type="button"
+                      className="h-9 px-3 text-caption font-semibold rounded-md border border-hairline bg-canvas hover:bg-surface-soft text-ink transition cursor-pointer"
+                      title="Send a sample notification to your device"
+                    >
+                      Test Alert
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      if (isSubscribed) {
+                        unsubscribe()
+                      } else {
+                        subscribe()
+                      }
+                    }}
+                    disabled={pushLoading}
+                    type="button"
+                    className={`h-9 px-4 text-caption rounded-md font-bold flex items-center gap-1.5 transition cursor-pointer border ${
+                      isSubscribed
+                        ? 'bg-canvas border-hairline text-muted hover:text-error hover:border-error/30'
+                        : 'btn-primary'
+                    }`}
+                  >
+                    {pushLoading ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : isSubscribed ? (
+                      <><BellOff className="w-3.5 h-3.5" /> Disable</>
+                    ) : (
+                      <><Bell className="w-3.5 h-3.5" /> Enable</>
+                    )}
+                  </button>
+                </div>
               )}
             </div>
-            {permission !== 'denied' && (
-              <button
-                onClick={isSubscribed ? unsubscribe : subscribe}
-                disabled={pushLoading}
-                className={`shrink-0 h-9 px-4 text-caption rounded-md font-bold flex items-center gap-1.5 transition cursor-pointer border ${
-                  isSubscribed
-                    ? 'bg-canvas border-hairline text-muted hover:text-error hover:border-error/30'
-                    : 'btn-primary'
-                }`}
-              >
-                {pushLoading ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : isSubscribed ? (
-                  <><BellOff className="w-3.5 h-3.5" /> Disable</>
-                ) : (
-                  <><Bell className="w-3.5 h-3.5" /> Enable</>
-                )}
-              </button>
-            )}
           </div>
         )}
 

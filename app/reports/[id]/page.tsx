@@ -126,7 +126,7 @@ export default function ReportDetailPage() {
             particleCount: 100,
             spread: 70,
             origin: { y: 0.6 },
-            colors: ['#10b981', '#2563eb', '#111111']
+            colors: ['#00bf63', '#177f95', '#111111']
           })
           alert('Thank you for confirming!')
         } else {

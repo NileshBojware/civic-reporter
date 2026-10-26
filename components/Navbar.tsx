@@ -8,7 +8,6 @@ import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import { useLanguage } from '@/lib/LanguageContext'
 import { LANGUAGES } from '@/lib/translations'
 import { ThemeToggle } from '@/components/ThemeToggle'
-import { usePushNotifications } from '@/lib/usePushNotifications'
 import { DEPARTMENTS, getAdminDepartment } from '@/lib/departments'
 
 export function Navbar() {
@@ -28,22 +27,29 @@ export function Navbar() {
   const [queueCount, setQueueCount] = useState(0)
 
   const userId = user?.id || profile?.id
-  // Push notifications — auto-subscribe when user is logged in
-  const { subscribe: subscribePush } = usePushNotifications(userId ?? null)
 
   // Listen to auth changes
   useEffect(() => {
     const fetchUser = async () => {
       if (isSupabaseConfigured && supabase) {
         const { data } = await supabase.auth.getSession()
-        setUser(data.session?.user || null)
-        if (data.session?.user) {
+        let sessionUser = data.session?.user || null
+        if (!sessionUser) {
+          const mockUserStr = typeof window !== 'undefined' ? localStorage.getItem('civic_reporter_user') : null
+          if (mockUserStr) {
+            sessionUser = JSON.parse(mockUserStr)
+          }
+        }
+        setUser(sessionUser)
+        if (sessionUser?.id && !String(sessionUser.id).startsWith('citizen-') && !String(sessionUser.id).startsWith('admin-')) {
           const { data: prof } = await supabase
             .from('profiles')
             .select('*')
-            .eq('id', data.session.user.id)
+            .eq('id', sessionUser.id)
             .maybeSingle()
-          setProfile(prof)
+          setProfile(prof || sessionUser)
+        } else {
+          setProfile(sessionUser)
         }
       } else {
         // Mock mode auth read
@@ -164,13 +170,7 @@ export function Navbar() {
         )
         .subscribe()
 
-      // Auto-subscribe to push after Supabase login (silent — only prompts
-      // if the user already granted permission previously)
-      if (typeof window !== 'undefined' && 'Notification' in window) {
-        if (Notification.permission === 'granted') {
-          subscribePush()
-        }
-      }
+
 
       return () => {
         supabase!.removeChannel(channel)
@@ -241,11 +241,23 @@ export function Navbar() {
     { href: '/reports', label: t('nav.allReports'), icon: FileText },
     { href: '/report', label: t('nav.reportIssue'), icon: PlusCircle },
     { href: '/my-reports', label: t('nav.myReports'), icon: ClipboardList },
+    { href: '/admin', label: userDept ? `${userDept.shortName} Admin` : t('nav.adminDashboard'), icon: Shield, adminOnly: true },
+  ]
+
+  const mobileNavLinks = [
+    { href: '/reports', label: t('nav.allReports'), icon: FileText },
+    { href: '/report', label: t('nav.reportIssue'), icon: PlusCircle },
+    { href: '/my-reports', label: t('nav.myReports'), icon: ClipboardList },
     { href: '/notifications', label: t('nav.notifications'), icon: Bell },
     { href: '/admin', label: userDept ? `${userDept.shortName} Admin` : t('nav.adminDashboard'), icon: Shield, adminOnly: true },
   ]
 
   const filteredLinks = navLinks.filter((link) => {
+    if (link.adminOnly && !isAdmin) return false
+    return true
+  })
+
+  const mobileFilteredLinks = mobileNavLinks.filter((link) => {
     if (link.adminOnly && !isAdmin) return false
     return true
   })
@@ -273,8 +285,8 @@ export function Navbar() {
               className="w-full h-full object-cover"
             />
           </div>
-          <span className="font-display text-base sm:text-title-md font-black text-slate-900 dark:text-white tracking-tight">
-            Sheher<span className="text-blue-600 dark:text-blue-400">Care</span>
+          <span className="font-display text-base sm:text-title-md font-black tracking-tight shehercare-brand-shadow">
+            <span className="text-[#00bf63]">Sheher</span><span className="text-[#177f95] dark:text-[#269eb8]">Care</span>
           </span>
         </Link>
 
@@ -283,23 +295,18 @@ export function Navbar() {
           {filteredLinks.map((link) => {
             const isActive = pathname === link.href
             const isReportLink = link.href === '/report'
-            const isNotifLink = link.href === '/notifications'
             return (
               <Link
                 key={link.href}
                 href={link.href}
                 className={`text-body-sm font-semibold transition-all duration-200 flex items-center gap-1.5 px-3 py-1.5 rounded-lg relative ${
                   isActive 
-                    ? 'text-blue-600 dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/40 border-b-2 border-blue-600 dark:border-blue-400' 
+                    ? 'text-[#177f95] dark:text-[#269eb8] bg-[#177f95]/10 border-b-2 border-[#177f95] dark:border-[#269eb8]' 
                     : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/50'
                 }`}
               >
-                {link.icon && <link.icon className={`w-4 h-4 ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-400'}`} />}
+                {link.icon && <link.icon className={`w-4 h-4 ${isActive ? 'text-[#177f95] dark:text-[#269eb8]' : 'text-slate-400 dark:text-slate-400'}`} />}
                 <span>{link.label}</span>
-                {/* Notifications unread indicator dot */}
-                {isNotifLink && unreadCount > 0 && (
-                  <span className="flex h-2 w-2 rounded-full bg-red-500 animate-pulse ml-0.5" />
-                )}
                 {/* Queued-report sync badge — only on Report Issue link */}
                 {isReportLink && queueCount > 0 && (
                   <span
@@ -469,7 +476,7 @@ export function Navbar() {
                 <div className="flex items-center gap-2 text-ink bg-surface-soft border border-hairline px-3 py-1.5 rounded-lg text-body-sm font-medium">
                   {isAdmin ? (
                     <>
-                      <Shield className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                      <Shield className="w-3.5 h-3.5 text-[#177f95] dark:text-[#269eb8] shrink-0" />
                       <span className="font-bold text-ink">
                         {userDept ? `${userDept.shortName} Admin` : 'Admin'}
                       </span>
@@ -529,19 +536,27 @@ export function Navbar() {
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-hairline bg-canvas p-4 space-y-4 animate-in fade-in duration-200">
           <nav className="flex flex-col gap-3">
-            {filteredLinks.map((link) => {
+            {mobileFilteredLinks.map((link) => {
               const isActive = pathname === link.href
+              const isNotif = link.href === '/notifications'
               return (
                 <Link
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`text-body-sm font-semibold p-2.5 rounded-md flex items-center gap-2 ${
+                  className={`text-body-sm font-semibold p-2.5 rounded-md flex items-center justify-between transition ${
                     isActive ? 'bg-brand-accent/10 text-brand-accent border border-brand-accent/20' : 'text-body hover:text-ink hover:bg-surface-soft'
                   }`}
                 >
-                  {link.icon && <link.icon className="w-4 h-4 text-brand-accent" />}
-                  <span>{link.label}</span>
+                  <div className="flex items-center gap-2">
+                    {link.icon && <link.icon className="w-4 h-4 text-brand-accent" />}
+                    <span>{link.label}</span>
+                  </div>
+                  {isNotif && unreadCount > 0 && (
+                    <span className="flex h-5 min-w-[20px] px-1.5 items-center justify-center rounded-full bg-red-500 text-white text-[10px] font-bold">
+                      {unreadCount}
+                    </span>
+                  )}
                 </Link>
               )
             })}
@@ -579,7 +594,7 @@ export function Navbar() {
                 <div className="flex items-center gap-2 text-ink p-2 text-body-sm font-medium">
                   {isAdmin ? (
                     <>
-                      <Shield className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <Shield className="w-4 h-4 text-[#177f95] dark:text-[#269eb8]" />
                       <span className="font-bold text-ink">{userDept ? `${userDept.shortName} Admin` : 'Admin'}</span>
                     </>
                   ) : (

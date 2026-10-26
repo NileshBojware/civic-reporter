@@ -72,7 +72,7 @@ export function ReportCard({ report, onUpvote, isUpvoted = false }: ReportCardPr
         <div>
           {/* Header row: Title */}
           <div className="flex items-start justify-between gap-4 mb-1">
-            <h3 className="text-title-md font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors leading-snug line-clamp-1">
+            <h3 className="text-title-md font-bold text-slate-900 dark:text-white group-hover:text-[#177f95] dark:group-hover:text-[#269eb8] transition-colors leading-snug line-clamp-1">
               {report.title}
             </h3>
           </div>
@@ -80,7 +80,7 @@ export function ReportCard({ report, onUpvote, isUpvoted = false }: ReportCardPr
           {/* Subheader: location and timestamp */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-slate-500 dark:text-slate-400 mb-2">
             <div className="flex items-center gap-1 min-w-0">
-              <MapPin className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+              <MapPin className="w-3.5 h-3.5 text-[#177f95] dark:text-[#269eb8] shrink-0" />
               <span className="truncate">{report.address}</span>
             </div>
             <div className="flex items-center gap-1 shrink-0">
@@ -111,11 +111,11 @@ export function ReportCard({ report, onUpvote, isUpvoted = false }: ReportCardPr
               disabled={loading}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-caption font-semibold border transition-all duration-150 cursor-pointer ${
                 upvoted
-                  ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-900/60'
+                  ? 'bg-[#177f95]/10 dark:bg-[#177f95]/20 text-[#177f95] dark:text-[#269eb8] border-[#177f95]/30 dark:border-[#177f95]/40'
                   : 'bg-slate-50 dark:bg-[#151f38] text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-[#1c2a4c]'
               }`}
             >
-              <ThumbsUp className={`w-3.5 h-3.5 ${upvoted ? 'fill-blue-600 text-blue-600 dark:fill-blue-400 dark:text-blue-400' : ''} ${loading ? 'animate-pulse' : ''}`} />
+              <ThumbsUp className={`w-3.5 h-3.5 ${upvoted ? 'fill-[#177f95] text-[#177f95] dark:fill-[#269eb8] dark:text-[#269eb8]' : ''} ${loading ? 'animate-pulse' : ''}`} />
               <span>{upvoteCount} {t('card.upvotes')}</span>
             </button>
           ) : (
@@ -127,7 +127,7 @@ export function ReportCard({ report, onUpvote, isUpvoted = false }: ReportCardPr
 
           <Link
             href={`/reports/${report.id}`}
-            className="inline-flex items-center gap-1 text-caption font-semibold text-slate-900 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 group/link"
+            className="inline-flex items-center gap-1 text-caption font-semibold text-slate-900 dark:text-white hover:text-[#177f95] dark:hover:text-[#269eb8] group/link"
           >
             <span>{t('card.details')}</span>
             <ArrowRight className="w-3.5 h-3.5 group-hover/link:translate-x-1 transition-transform" />

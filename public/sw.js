@@ -73,12 +73,20 @@ async function broadcastQueueCount() {
 }
 
 // ---------------------------------------------------------------------------
-// Install — pre-cache static shell
+// Install — pre-cache static shell (resilient to CDN / network hiccups)
 // ---------------------------------------------------------------------------
 self.addEventListener('install', (event) => {
   self.skipWaiting()
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE))
+    caches.open(CACHE_NAME).then(async (cache) => {
+      await Promise.allSettled(
+        ASSETS_TO_CACHE.map((url) =>
+          cache.add(url).catch((err) => {
+            console.warn('[SW] Could not precache:', url, err)
+          })
+        )
+      )
+    })
   )
 })
 
@@ -206,6 +214,17 @@ self.addEventListener('message', async (event) => {
     const count = await getQueueCount()
     event.source.postMessage({ type: 'QUEUE_COUNT', count })
   }
+  if (event.data?.type === 'SHOW_TEST_NOTIFICATION') {
+    self.registration.showNotification(event.data.title || 'SheherCare', {
+      body: event.data.body || 'Push notifications are enabled and working properly!',
+      icon: event.data.icon || '/logo.png',
+      badge: event.data.badge || '/logo.png',
+      data: { url: event.data.url || '/notifications' },
+      vibrate: [200, 100, 200],
+      tag: 'shehercare-test-notification',
+      renotify: true,
+    })
+  }
 })
 
 // ---------------------------------------------------------------------------
@@ -224,8 +243,8 @@ self.addEventListener('push', (event) => {
   const title = payload.title || 'SheherCare'
   const options = {
     body: payload.body || '',
-    icon: payload.icon || '/manifest-icon-192.png',
-    badge: payload.badge || '/manifest-icon-96.png',
+    icon: payload.icon || '/logo.png',
+    badge: payload.badge || '/logo.png',
     data: { url: payload.url || '/' },
     vibrate: [200, 100, 200],
     tag: 'shehercare-notification',   // replaces previous if not yet dismissed

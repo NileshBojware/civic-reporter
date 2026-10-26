@@ -13,29 +13,30 @@ export async function POST(request: NextRequest) {
     }
 
     if (isSupabaseServerConfigured && supabaseServer) {
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(user_id)) {
-        return NextResponse.json({ error: 'Invalid user_id format' }, { status: 400 })
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      if (uuidRegex.test(user_id)) {
+        // Upsert so re-subscribing (e.g. after permission grant) just refreshes the keys
+        const { error } = await supabaseServer
+          .from('push_subscriptions')
+          .upsert(
+            {
+              user_id,
+              endpoint: subscription.endpoint,
+              p256dh: subscription.keys.p256dh,
+              auth: subscription.keys.auth,
+            },
+            { onConflict: 'endpoint' }
+          )
+
+        if (error) {
+          console.warn('[Push Subscribe] Supabase upsert failed:', error.message)
+          // Do not fail the client request entirely if the database table had an issue
+        }
+      } else {
+        // Mock mode or client device identifier
+        console.log('[Push Subscribe] Non-UUID user_id subscribed (client-side only):', user_id)
       }
-
-      // Upsert so re-subscribing (e.g. after permission grant) just refreshes the keys
-      const { error } = await supabaseServer
-        .from('push_subscriptions')
-        .upsert(
-          {
-            user_id,
-            endpoint: subscription.endpoint,
-            p256dh: subscription.keys.p256dh,
-            auth: subscription.keys.auth,
-          },
-          { onConflict: 'endpoint' }
-        )
-
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     }
-    // In mock mode there's no persistent store for push subscriptions —
-    // the browser still registers with the push server directly, so push
-    // will work as long as the same browser session is open.
 
     return NextResponse.json({ success: true }, { status: 201 })
   } catch (err: any) {
@@ -52,18 +53,18 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (isSupabaseServerConfigured && supabaseServer) {
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      if (!uuidRegex.test(user_id)) {
-        return NextResponse.json({ error: 'Invalid user_id format' }, { status: 400 })
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      if (uuidRegex.test(user_id)) {
+        const { error } = await supabaseServer
+          .from('push_subscriptions')
+          .delete()
+          .eq('user_id', user_id)
+          .eq('endpoint', endpoint)
+
+        if (error) {
+          console.warn('[Push Unsubscribe] Supabase delete failed:', error.message)
+        }
       }
-
-      const { error } = await supabaseServer
-        .from('push_subscriptions')
-        .delete()
-        .eq('user_id', user_id)
-        .eq('endpoint', endpoint)
-
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })

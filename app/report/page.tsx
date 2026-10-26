@@ -517,7 +517,7 @@ export default function ReportPage() {
         particleCount: 150,
         spread: 80,
         origin: { y: 0.6 },
-        colors: ['#2563eb', '#111111', '#10b981'],
+        colors: ['#177f95', '#00bf63', '#111111'],
       })
 
       alert(t('form.successTitle'))

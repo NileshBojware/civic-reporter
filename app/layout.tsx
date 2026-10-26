@@ -38,9 +38,9 @@ export default function RootLayout({
               <div className="container mx-auto px-4 md:px-6 max-w-[1240px]">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
                   <div className="space-y-4">
-                    <div className="flex items-center gap-2.5 text-slate-900 dark:text-white font-display text-title-md font-bold">
+                    <div className="flex items-center gap-2.5 font-display text-title-md font-bold tracking-tight">
                       <img src="/logo.png" alt="SheherCare Logo" className="w-7 h-7 rounded-full object-cover border border-slate-200/90 dark:border-slate-800" />
-                      SheherCare
+                      <span className="shehercare-brand-shadow"><span className="text-[#00bf63]">Sheher</span><span className="text-[#177f95] dark:text-[#269eb8]">Care</span></span>
                     </div>
                     <p className="text-body-sm text-slate-500 dark:text-slate-400 max-w-xs leading-relaxed">
                       Empowering local communities with clean, transparent, and direct civic reporting infrastructure.
@@ -49,28 +49,28 @@ export default function RootLayout({
                   <div>
                     <h4 className="text-slate-900 dark:text-white text-title-sm font-semibold mb-4">Platform</h4>
                     <ul className="space-y-2">
-                      <li><a href="/report" className="hover:text-blue-600 dark:hover:text-white transition">Report an Issue</a></li>
-                      <li><a href="/reports" className="hover:text-blue-600 dark:hover:text-white transition">Browse Reports</a></li>
-                      <li><a href="/reports?view=map" className="hover:text-blue-600 dark:hover:text-white transition">Interactive Map</a></li>
-                      <li><a href="#" className="hover:text-blue-600 dark:hover:text-white transition">How It Works</a></li>
+                      <li><a href="/report" className="hover:text-[#177f95] dark:hover:text-[#269eb8] transition">Report an Issue</a></li>
+                      <li><a href="/reports" className="hover:text-[#177f95] dark:hover:text-[#269eb8] transition">Browse Reports</a></li>
+                      <li><a href="/reports?view=map" className="hover:text-[#177f95] dark:hover:text-[#269eb8] transition">Interactive Map</a></li>
+                      <li><a href="#" className="hover:text-[#177f95] dark:hover:text-[#269eb8] transition">How It Works</a></li>
                     </ul>
                   </div>
                   <div>
                     <h4 className="text-slate-900 dark:text-white text-title-sm font-semibold mb-4">For Citizens</h4>
                     <ul className="space-y-2">
-                      <li><a href="/my-reports" className="hover:text-blue-600 dark:hover:text-white transition">My Reports Dashboard</a></li>
-                      <li><a href="/login" className="hover:text-blue-600 dark:hover:text-white transition">Sign In</a></li>
-                      <li><a href="/signup" className="hover:text-blue-600 dark:hover:text-white transition">Create Account</a></li>
-                      <li><a href="#" className="hover:text-blue-600 dark:hover:text-white transition">Ward Boundaries</a></li>
+                      <li><a href="/my-reports" className="hover:text-[#177f95] dark:hover:text-[#269eb8] transition">My Reports Dashboard</a></li>
+                      <li><a href="/login" className="hover:text-[#177f95] dark:hover:text-[#269eb8] transition">Sign In</a></li>
+                      <li><a href="/signup" className="hover:text-[#177f95] dark:hover:text-[#269eb8] transition">Create Account</a></li>
+                      <li><a href="#" className="hover:text-[#177f95] dark:hover:text-[#269eb8] transition">Ward Boundaries</a></li>
                     </ul>
                   </div>
                   <div>
                     <h4 className="text-slate-900 dark:text-white text-title-sm font-semibold mb-4">For Administrators</h4>
                     <ul className="space-y-2">
-                      <li><a href="/admin" className="hover:text-blue-600 dark:hover:text-white transition">Admin Triage Board</a></li>
-                      <li><a href="#" className="hover:text-blue-600 dark:hover:text-white transition">Department Portal</a></li>
-                      <li><a href="#" className="hover:text-blue-600 dark:hover:text-white transition">SLA Benchmarks</a></li>
-                      <li><a href="#" className="hover:text-blue-600 dark:hover:text-white transition">Developer API</a></li>
+                      <li><a href="/admin" className="hover:text-[#177f95] dark:hover:text-[#269eb8] transition">Admin Triage Board</a></li>
+                      <li><a href="#" className="hover:text-[#177f95] dark:hover:text-[#269eb8] transition">Department Portal</a></li>
+                      <li><a href="#" className="hover:text-[#177f95] dark:hover:text-[#269eb8] transition">SLA Benchmarks</a></li>
+                      <li><a href="#" className="hover:text-[#177f95] dark:hover:text-[#269eb8] transition">Developer API</a></li>
                     </ul>
                   </div>
                 </div>

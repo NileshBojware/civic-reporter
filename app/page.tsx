@@ -153,15 +153,15 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             {/* Hero Left Content */}
             <div className="lg:col-span-6 flex flex-col items-start text-left">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-xs font-semibold bg-white/95 dark:bg-[#0c1222]/95 text-blue-600 dark:text-blue-400 border border-blue-200/90 dark:border-blue-900/50 mb-4 sm:mb-5 shrink-0 shadow-xs backdrop-blur-md">
-                <MapPin className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-xs font-semibold bg-white/95 dark:bg-[#0c1222]/95 text-[#177f95] dark:text-[#269eb8] border border-[#177f95]/30 mb-4 sm:mb-5 shrink-0 shadow-xs backdrop-blur-md">
+                <MapPin className="w-3.5 h-3.5 text-[#177f95] dark:text-[#269eb8]" />
                 <span>{t('hero.badge') || 'Empowering Citizen Action'}</span>
               </span>
 
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-[54px] font-black text-slate-900 dark:text-white tracking-tight leading-[1.15] sm:leading-[1.1] mb-4 sm:mb-5">
                 Report Civic <br className="hidden sm:inline" />
                 Problems. <br />
-                <span className="text-blue-600 dark:text-blue-400">Track Solutions in Real Time.</span>
+                <span className="text-[#177f95] dark:text-[#269eb8]">Track Solutions in Real Time.</span>
               </h1>
 
               <p className="text-sm sm:text-base lg:text-lg text-slate-600 dark:text-slate-300 mb-6 sm:mb-8 max-w-lg leading-relaxed font-normal">
@@ -181,9 +181,9 @@ export default function LandingPage() {
                   href="/reports"
                   className="w-full sm:w-auto px-6 py-3.5 rounded-full bg-white hover:bg-slate-50 dark:bg-[#0c1222] dark:hover:bg-[#141d36] text-slate-800 dark:text-white font-semibold text-sm flex items-center justify-center gap-2 border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5"
                 >
-                  <MapIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <MapIcon className="w-4 h-4 text-[#177f95] dark:text-[#269eb8]" />
                   <span>{t('hero.btnViewMap') || 'View Map'}</span>
-                  <ArrowRight className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <ArrowRight className="w-4 h-4 text-[#177f95] dark:text-[#269eb8]" />
                 </Link>
               </div>
 
@@ -193,7 +193,7 @@ export default function LandingPage() {
                   href="/report"
                   className="flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-xl bg-white/95 hover:bg-slate-50/90 dark:bg-[#0c1222]/95 dark:hover:bg-[#121a30] border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 group cursor-pointer min-w-0"
                 >
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-50 dark:bg-[#151f38] group-hover:bg-blue-600 text-blue-600 dark:text-blue-400 group-hover:text-white transition-colors flex items-center justify-center shrink-0">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#177f95]/10 dark:bg-[#177f95]/20 group-hover:bg-[#177f95] text-[#177f95] dark:text-[#269eb8] group-hover:text-white transition-colors flex items-center justify-center shrink-0">
                     <Camera className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -206,7 +206,7 @@ export default function LandingPage() {
                   href="/report"
                   className="flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-xl bg-white/95 hover:bg-slate-50/90 dark:bg-[#0c1222]/95 dark:hover:bg-[#121a30] border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 group cursor-pointer min-w-0"
                 >
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-50 dark:bg-[#151f38] group-hover:bg-blue-600 text-blue-600 dark:text-blue-400 group-hover:text-white transition-colors flex items-center justify-center shrink-0">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#177f95]/10 dark:bg-[#177f95]/20 group-hover:bg-[#177f95] text-[#177f95] dark:text-[#269eb8] group-hover:text-white transition-colors flex items-center justify-center shrink-0">
                     <MapPin className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -219,7 +219,7 @@ export default function LandingPage() {
                   href="/reports"
                   className="flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-xl bg-white/95 hover:bg-slate-50/90 dark:bg-[#0c1222]/95 dark:hover:bg-[#121a30] border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 group cursor-pointer min-w-0"
                 >
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-50 dark:bg-[#151f38] group-hover:bg-blue-600 text-blue-600 dark:text-blue-400 group-hover:text-white transition-colors flex items-center justify-center shrink-0">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#177f95]/10 dark:bg-[#177f95]/20 group-hover:bg-[#177f95] text-[#177f95] dark:text-[#269eb8] group-hover:text-white transition-colors flex items-center justify-center shrink-0">
                     <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -232,7 +232,7 @@ export default function LandingPage() {
                   href="/reports"
                   className="flex items-center gap-2 sm:gap-2.5 p-2 sm:p-2.5 rounded-xl bg-white/95 hover:bg-slate-50/90 dark:bg-[#0c1222]/95 dark:hover:bg-[#121a30] border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 group cursor-pointer min-w-0"
                 >
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-blue-50 dark:bg-[#151f38] group-hover:bg-blue-600 text-blue-600 dark:text-blue-400 group-hover:text-white transition-colors flex items-center justify-center shrink-0">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-[#177f95]/10 dark:bg-[#177f95]/20 group-hover:bg-[#177f95] text-[#177f95] dark:text-[#269eb8] group-hover:text-white transition-colors flex items-center justify-center shrink-0">
                     <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -253,9 +253,9 @@ export default function LandingPage() {
                   href="/reports"
                   className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 z-[400] bg-white/95 dark:bg-[#0c1222]/95 backdrop-blur-md px-3 sm:px-3.5 py-1.5 rounded-full shadow-lg border border-slate-200/90 dark:border-slate-800 text-[11px] sm:text-xs font-bold text-slate-800 dark:text-white flex items-center gap-1.5 hover:bg-white dark:hover:bg-[#0c1222] transition-all hover:scale-105 max-w-[calc(100%-24px)]"
                 >
-                  <MapPin className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                  <MapPin className="w-3.5 h-3.5 text-[#177f95] dark:text-[#269eb8] shrink-0" />
                   <span className="truncate">{reports.length > 0 ? `${reports.length} reports in this area` : '14 reports in this area'}</span>
-                  <ArrowRight className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                  <ArrowRight className="w-3.5 h-3.5 text-[#177f95] dark:text-[#269eb8] shrink-0" />
                 </Link>
               </div>
             </div>
@@ -274,7 +274,7 @@ export default function LandingPage() {
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                  <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl bg-blue-50 dark:bg-[#151f38] group-hover:bg-blue-100 dark:group-hover:bg-[#1c2a4c] text-blue-600 dark:text-blue-400 transition-colors flex items-center justify-center shrink-0">
+                  <div className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl bg-[#177f95]/10 dark:bg-[#177f95]/20 group-hover:bg-[#177f95]/20 text-[#177f95] dark:text-[#269eb8] transition-colors flex items-center justify-center shrink-0">
                     <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                   <div className="min-w-0">
@@ -295,12 +295,12 @@ export default function LandingPage() {
                 <svg className="w-full h-6 sm:h-8 overflow-visible" viewBox="0 0 120 28" fill="none" preserveAspectRatio="none">
                   <defs>
                     <linearGradient id="blueSpark" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#2563eb" stopOpacity="0.25" />
-                      <stop offset="100%" stopColor="#2563eb" stopOpacity="0.0" />
+                      <stop offset="0%" stopColor="#177f95" stopOpacity="0.25" />
+                      <stop offset="100%" stopColor="#177f95" stopOpacity="0.0" />
                     </linearGradient>
                   </defs>
                   <path d="M0,24 Q25,12 50,20 T90,8 T120,3 L120,28 L0,28 Z" fill="url(#blueSpark)" />
-                  <path d="M0,24 Q25,12 50,20 T90,8 T120,3" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" />
+                  <path d="M0,24 Q25,12 50,20 T90,8 T120,3" stroke="#177f95" strokeWidth="2.5" strokeLinecap="round" />
                 </svg>
               </div>
             </Link>
@@ -433,7 +433,7 @@ export default function LandingPage() {
           {/* 3-Up Feature Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6 mb-12 sm:mb-16 md:mb-20">
             <div className="p-6 sm:p-8 bg-white dark:bg-[#0c1222] rounded-2xl border border-slate-200/90 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 dark:bg-[#151f38] text-blue-600 dark:text-blue-400 mb-5 sm:mb-6">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#177f95]/10 dark:bg-[#177f95]/20 text-[#177f95] dark:text-[#269eb8] mb-5 sm:mb-6">
                 <MapPin className="w-5 h-5" />
               </div>
               <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2 sm:mb-3">1. Pin Location</h3>
@@ -505,7 +505,7 @@ export default function LandingPage() {
             </div>
             <Link
               href="/reports"
-              className="text-xs font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1.5 shrink-0"
+              className="text-xs font-bold text-[#177f95] dark:text-[#269eb8] hover:underline flex items-center gap-1.5 shrink-0"
             >
               <span>{t('landing.viewCatalog')}</span>
               <ArrowRight className="w-4 h-4" />

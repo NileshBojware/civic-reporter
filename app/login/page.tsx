@@ -148,7 +148,7 @@ export default function LoginPage() {
         
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 mb-1">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-[#177f95]/10 text-[#177f95] dark:text-[#269eb8] mb-1">
             <Shield className="w-6 h-6" />
           </div>
           <h2 className="text-display-sm text-ink font-bold tracking-tight">
@@ -239,7 +239,7 @@ export default function LoginPage() {
         {/* Sign up link */}
         <div className="text-center text-caption text-muted border-t border-hairline pt-4 flex items-center justify-center gap-1.5">
           <span>{t('login.noAcc') || "Don't have an account?"}</span>
-          <Link href="/signup" className="text-blue-600 dark:text-blue-400 font-bold hover:underline">
+          <Link href="/signup" className="text-[#177f95] dark:text-[#269eb8] font-bold hover:underline">
             {t('login.signupLink') || 'Create account'}
           </Link>
         </div>
