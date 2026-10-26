@@ -244,6 +244,45 @@ export default function LoginPage() {
           </Link>
         </div>
 
+        {/* Demo Department Admin Quick Fill */}
+        <div className="pt-3 border-t border-hairline/60">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-muted mb-2 text-center">
+            Demo Department Logins
+          </p>
+          <div className="grid grid-cols-3 gap-1.5 text-[11px]">
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('admin.pwd@shehercare.in')
+                setPassword('Sheher@PWD26')
+              }}
+              className="px-2 py-1.5 rounded-lg border border-hairline bg-surface-soft hover:bg-canvas hover:border-primary text-ink font-semibold transition text-center"
+            >
+              PWD Admin
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('admin.electrical@shehercare.in')
+                setPassword('Sheher@ELEC26')
+              }}
+              className="px-2 py-1.5 rounded-lg border border-hairline bg-surface-soft hover:bg-canvas hover:border-primary text-ink font-semibold transition text-center"
+            >
+              Electrical Admin
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('admin.grievance@shehercare.in')
+                setPassword('Sheher@GRIEVANCE26')
+              }}
+              className="px-2 py-1.5 rounded-lg border border-hairline bg-surface-soft hover:bg-canvas hover:border-primary text-ink font-semibold transition text-center"
+            >
+              Grievance Admin
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
   )

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { ArrowLeft, Shield, CheckCircle, XCircle, Play, AlertCircle, FileText, Image as ImageIcon, AlertTriangle, ShieldCheck, Building2, UserCheck } from 'lucide-react'
+import { ArrowLeft, Shield, CheckCircle, XCircle, Play, AlertCircle, FileText, Image as ImageIcon, AlertTriangle, ShieldCheck, Building2, UserCheck, Lock, ShieldAlert } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import { StatusBadge } from '@/components/StatusBadge'
 import imageCompression from 'browser-image-compression'
@@ -134,6 +134,10 @@ export default function AdminReportDetailPage() {
   }
 
   const handleStartFix = async () => {
+    if (!isDirectJurisdiction) {
+      setError(`Permission denied: Only administrators of ${reportDept.name} can update this ticket.`)
+      return
+    }
     setError('')
     setSubmitting(true)
 
@@ -141,7 +145,10 @@ export default function AdminReportDetailPage() {
       const res = await fetch(`/api/reports/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'in_progress' }),
+        body: JSON.stringify({ 
+          status: 'in_progress',
+          admin_department_id: currentAdminDept?.id,
+        }),
       })
 
       if (!res.ok) {
@@ -158,6 +165,10 @@ export default function AdminReportDetailPage() {
   }
 
   const handleVerify = async () => {
+    if (!isDirectJurisdiction) {
+      setError(`Permission denied: Only administrators of ${reportDept.name} can update this ticket.`)
+      return
+    }
     setError('')
     setSubmitting(true)
 
@@ -165,7 +176,10 @@ export default function AdminReportDetailPage() {
       const res = await fetch(`/api/reports/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'verified' }),
+        body: JSON.stringify({ 
+          status: 'verified',
+          admin_department_id: currentAdminDept?.id,
+        }),
       })
 
       if (!res.ok) {
@@ -183,6 +197,10 @@ export default function AdminReportDetailPage() {
 
   const handleResolveSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!isDirectJurisdiction) {
+      setError(`Permission denied: Only administrators of ${reportDept.name} can update this ticket.`)
+      return
+    }
     if (!resolvedNote || !resolutionPhotoUrl) {
       setError('Please add a resolution description and upload work completion photo evidence.')
       return
@@ -219,6 +237,7 @@ export default function AdminReportDetailPage() {
           status: 'resolved',
           resolved_note: resolvedNote,
           resolved_image_url: finalImageUrl,
+          admin_department_id: currentAdminDept?.id,
         }),
       })
 
@@ -240,6 +259,10 @@ export default function AdminReportDetailPage() {
 
   const handleRejectSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!isDirectJurisdiction) {
+      setError(`Permission denied: Only administrators of ${reportDept.name} can update this ticket.`)
+      return
+    }
     if (!rejectionReason) {
       setError('A rejection reason is mandatory.')
       return
@@ -255,6 +278,7 @@ export default function AdminReportDetailPage() {
         body: JSON.stringify({
           status: 'rejected',
           rejection_reason: rejectionReason,
+          admin_department_id: currentAdminDept?.id,
         }),
       })
 
@@ -274,6 +298,10 @@ export default function AdminReportDetailPage() {
   }
 
   const handleResetTicket = async () => {
+    if (!isDirectJurisdiction) {
+      setError(`Permission denied: Only administrators of ${reportDept.name} can update this ticket.`)
+      return
+    }
     if (!window.confirm('Reset this ticket back to Pending? This will delete resolution or rejection notes.')) return
     setError('')
     setSubmitting(true)
@@ -281,7 +309,10 @@ export default function AdminReportDetailPage() {
       const res = await fetch(`/api/reports/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: 'pending' }),
+        body: JSON.stringify({ 
+          status: 'pending',
+          admin_department_id: currentAdminDept?.id,
+        }),
       })
       if (res.ok) {
         alert('Ticket status reset to Pending.')
@@ -329,7 +360,11 @@ export default function AdminReportDetailPage() {
 
   const reportDept = getDepartmentByCategory(report.category)
   const currentAdminDept = getAdminDepartment(user, profile)
-  const isDirectJurisdiction = currentAdminDept?.categories.includes(report.category)
+  const isDirectJurisdiction = Boolean(
+    currentAdminDept?.id === 'grievance' ||
+    (currentAdminDept && currentAdminDept.id === reportDept.id) ||
+    (currentAdminDept && currentAdminDept.categories.includes(report.category))
+  )
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-8 md:py-12 bg-canvas text-body">
@@ -353,8 +388,8 @@ export default function AdminReportDetailPage() {
                 Direct Jurisdiction
               </span>
             ) : (
-              <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-surface-soft text-muted border border-hairline">
-                Cross-Department Referral
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/25">
+                <Lock className="w-2.5 h-2.5" /> Cross-Department (Read-Only)
               </span>
             )}
           </div>
@@ -414,12 +449,40 @@ export default function AdminReportDetailPage() {
             </div>
           </div>
 
-          {/* Action Dashboard Panel */}
-          <div className="p-6 md:p-8 rounded-lg bg-canvas border border-hairline shadow-sm space-y-6">
-            <h3 className="text-title-sm font-bold text-ink border-b border-hairline-soft pb-3 flex items-center gap-1.5">
-              <FileText className="w-4.5 h-4.5 text-brand-accent" />
-              <span>Update Ticket Status</span>
-            </h3>
+          {/* Action Dashboard Panel (Direct Jurisdiction) or Read-Only Notice (Cross-Department) */}
+          {!isDirectJurisdiction ? (
+            <div className="p-6 md:p-8 rounded-2xl bg-canvas border border-hairline shadow-sm space-y-4">
+              <div className="flex items-center gap-2 pb-3 border-b border-hairline text-ink">
+                <Lock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                <h3 className="text-title-sm font-bold">Cross-Department Read-Only View</h3>
+              </div>
+
+              <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/25 space-y-2.5">
+                <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-bold text-caption uppercase tracking-wide">
+                  <ShieldAlert className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+                  <span>Administrative Jurisdiction Restricted</span>
+                </div>
+                <p className="text-body-sm text-body leading-relaxed">
+                  This report is assigned to the <strong className="text-ink">{reportDept.name} ({reportDept.shortName})</strong>.
+                </p>
+                <p className="text-caption text-muted leading-relaxed">
+                  As an administrator of <strong>{currentAdminDept?.name || 'another department'}</strong>, you can inspect full ticket details, location, evidence, and comments for coordination, but <strong>you cannot change the ticket status or execute administrative actions</strong>.
+                </p>
+              </div>
+
+              <div className="pt-2 text-caption text-muted flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-t border-hairline">
+                <span>Responsible Department Contact:</span>
+                <code className="text-xs font-mono font-bold text-ink bg-surface-soft px-2 py-1 rounded border border-hairline">
+                  {reportDept.adminEmail}
+                </code>
+              </div>
+            </div>
+          ) : (
+            <div className="p-6 md:p-8 rounded-lg bg-canvas border border-hairline shadow-sm space-y-6">
+              <h3 className="text-title-sm font-bold text-ink border-b border-hairline-soft pb-3 flex items-center gap-1.5">
+                <FileText className="w-4.5 h-4.5 text-brand-accent" />
+                <span>Update Ticket Status</span>
+              </h3>
 
             {/* If resolved or rejected, let them reset */}
             {(report.status === 'resolved' || report.status === 'rejected') ? (
@@ -583,6 +646,7 @@ export default function AdminReportDetailPage() {
               </div>
             )}
           </div>
+          )}
         </div>
 
         {/* Right: Map Pin Card */}

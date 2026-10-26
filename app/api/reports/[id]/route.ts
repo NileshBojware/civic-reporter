@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { isSupabaseServerConfigured, supabaseServer } from '@/lib/supabaseServer'
 import { readMockDb, writeMockDb, Report } from '@/lib/mockDb'
 import { sendReportStatusPushNotification } from '@/lib/pushService'
+import { getDepartmentByCategory } from '@/lib/departments'
 
 // GET /api/reports/[id] - Get single report details
 export async function GET(
@@ -44,10 +45,36 @@ export async function PATCH(
 
   try {
     const body = await request.json()
-    const { status, rejection_reason, resolved_image_url, resolved_note } = body
+    const { status, rejection_reason, resolved_image_url, resolved_note, admin_department_id } = body
 
     if (!status) {
       return NextResponse.json({ error: 'Status is required' }, { status: 400 })
+    }
+
+    // Enforce department jurisdiction authorization:
+    // Administrators from other departments cannot change ticket status
+    if (admin_department_id && admin_department_id !== 'grievance') {
+      const db = readMockDb()
+      let reportCategory = db.reports.find((r) => r.id === id)?.category
+      if (!reportCategory && isSupabaseServerConfigured && supabaseServer) {
+        try {
+          const { data: rep } = await supabaseServer.from('reports').select('category').eq('id', id).maybeSingle()
+          reportCategory = rep?.category
+        } catch {
+          // ignore
+        }
+      }
+
+      if (reportCategory) {
+        const targetDept = getDepartmentByCategory(reportCategory)
+        const isAuthorized = targetDept.id === admin_department_id || targetDept.categories.includes(reportCategory)
+        if (!isAuthorized) {
+          return NextResponse.json(
+            { error: `Permission Denied: Only administrators of the ${targetDept.name} (${targetDept.shortName}) can modify this ticket's status.` },
+            { status: 403 }
+          )
+        }
+      }
     }
 
     const updates: Partial<Report> = {

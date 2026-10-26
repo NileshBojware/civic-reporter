@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { 
   Shield, 
   AlertTriangle, 
-  ToggleLeft, 
+  Lock, 
   Search, 
   ArrowUpRight, 
   Building2, 
@@ -20,7 +20,6 @@ import {
 } from 'lucide-react'
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient'
 import { StatusBadge } from '@/components/StatusBadge'
-import { AiProBadge } from '@/components/AiProBadge'
 import { useLanguage } from '@/lib/LanguageContext'
 import { DEPARTMENTS, getAdminDepartment, getDepartmentByCategory, Department } from '@/lib/departments'
 import { getCategoryFormattedLabel, getCategoryStyles } from '@/lib/categories'
@@ -398,7 +397,12 @@ export default function AdminDashboardPage() {
                 ) : (
                   filteredReports.map((report) => {
                     const reportDept = getDepartmentByCategory(report.category)
-                    const isDirectJurisdiction = activeDept.categories.includes(report.category)
+                    const adminDept = getAdminDepartment(user, profile) || activeDept
+                    const isDirectJurisdiction = Boolean(
+                      adminDept.id === 'grievance' ||
+                      adminDept.id === reportDept.id ||
+                      adminDept.categories.includes(report.category)
+                    )
 
                     return (
                       <tr key={report.id} className="hover:bg-surface-soft/40 transition bg-canvas">
@@ -409,9 +413,16 @@ export default function AdminDashboardPage() {
                         
                         <td className="p-3.5">
                           <div className="space-y-1">
-                            <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold border ${reportDept.badgeColor}`}>
-                              {reportDept.shortName}
-                            </span>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold border ${reportDept.badgeColor}`}>
+                                {reportDept.shortName}
+                              </span>
+                              {!isDirectJurisdiction && (
+                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-semibold bg-surface-soft text-muted border border-hairline" title="View-only access for other departments">
+                                  <Lock className="w-2.5 h-2.5 text-muted" /> Read-Only
+                                </span>
+                              )}
+                            </div>
                             <span className="text-xs text-body font-medium block">
                               {getCategoryFormattedLabel(report.category)}
                             </span>
@@ -429,9 +440,13 @@ export default function AdminDashboardPage() {
                         <td className="p-3.5 text-right">
                           <Link
                             href={`/admin/reports/${report.id}`}
-                            className="btn-primary h-8 px-3 py-1 text-[11px] inline-flex items-center gap-1 rounded-lg font-bold shadow-sm"
+                            className={
+                              isDirectJurisdiction
+                                ? "btn-primary h-8 px-3 py-1 text-[11px] inline-flex items-center gap-1 rounded-lg font-bold shadow-sm"
+                                : "btn-secondary h-8 px-3 py-1 text-[11px] inline-flex items-center gap-1 rounded-lg font-medium text-muted hover:text-ink"
+                            }
                           >
-                            <span>Triage</span>
+                            <span>{isDirectJurisdiction ? 'Triage' : 'View (Read-Only)'}</span>
                             <ArrowUpRight className="w-3 h-3" />
                           </Link>
                         </td>
@@ -487,37 +502,6 @@ export default function AdminDashboardPage() {
                   </button>
                 )
               })}
-            </div>
-          </div>
-
-          {/* AI Automation Modules */}
-          <div className="p-5 rounded-2xl bg-surface-card border border-hairline shadow-sm space-y-4">
-            <div className="flex items-center justify-between gap-4">
-              <h3 className="text-[11px] font-bold text-muted uppercase tracking-widest">Automation Modules</h3>
-              <AiProBadge />
-            </div>
-
-            <h4 className="text-body-sm font-bold text-ink">Auto-Routing to Departments</h4>
-            <p className="text-caption text-body leading-relaxed">
-              Automated computer vision and NLP models classify citizen photos into the appropriate municipal department with 98.4% accuracy.
-            </p>
-
-            <div className="space-y-3 pt-3 border-t border-hairline">
-              <div className="flex items-center justify-between gap-4 opacity-70">
-                <div>
-                  <span className="text-caption font-bold text-ink block">Auto-Dispatch to Field Teams</span>
-                  <span className="text-[9px] text-muted block">Sends alert to department duty officer</span>
-                </div>
-                <ToggleLeft className="w-8 h-8 text-blue-600" />
-              </div>
-
-              <div className="flex items-center justify-between gap-4 opacity-70">
-                <div>
-                  <span className="text-caption font-bold text-ink block">Duplicate Detection (100m)</span>
-                  <span className="text-[9px] text-muted block">Clusters nearby citizen reports</span>
-                </div>
-                <ToggleLeft className="w-8 h-8 text-blue-600" />
-              </div>
             </div>
           </div>
 
