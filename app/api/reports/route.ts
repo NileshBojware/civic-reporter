@@ -81,14 +81,82 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { title, description, category, latitude, longitude, address, image_url, user_id } = body
+    const { title, description, category, latitude, longitude, address, image_url, user_id, image_data } = body
 
     if (!title || !category || latitude === undefined || longitude === undefined || !address) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
+    // De-duplication check: prevent duplicate submissions within 15 minutes
+    if (user_id && title) {
+      const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString()
+
+      if (isSupabaseServerConfigured && supabaseServer) {
+        const { data: existingReport } = await supabaseServer
+          .from('reports')
+          .select('*')
+          .eq('user_id', user_id)
+          .eq('title', title)
+          .gt('created_at', fifteenMinutesAgo)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (existingReport) {
+          return NextResponse.json(existingReport, { status: 200 })
+        }
+      } else {
+        const db = readMockDb()
+        const existingReport = db.reports.find(
+          (r) => r.user_id === user_id && r.title === title && r.created_at >= fifteenMinutesAgo
+        )
+        if (existingReport) {
+          return NextResponse.json(existingReport, { status: 200 })
+        }
+      }
+    }
+
     const dept = getDepartmentByCategory(category)
     const categoryLabel = getCategoryFormattedLabel(category)
+
+    let finalImageUrl = image_url || 'https://images.unsplash.com/photo-1584824486509-112e4181ff6b?auto=format&fit=crop&w=800&q=80'
+
+    // If offline report synced with base64 image data, upload directly to Supabase storage
+    if (image_data && image_data.base64) {
+      if (isSupabaseServerConfigured && supabaseServer) {
+        try {
+          const ext = image_data.fileName?.split('.').pop() || 'jpg'
+          const filePath = `${user_id || 'anonymous'}/evidence_offline_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.${ext}`
+          const cleanBase64 = image_data.base64.replace(/^data:image\/[a-zA-Z+]+;base64,/, '')
+          const buffer = Buffer.from(cleanBase64, 'base64')
+          const mimeType = image_data.contentType || 'image/jpeg'
+
+          const { error: uploadError } = await supabaseServer.storage
+            .from('reports-evidence')
+            .upload(filePath, buffer, {
+              contentType: mimeType,
+              upsert: true,
+            })
+
+          if (!uploadError) {
+            const { data: publicUrlData } = supabaseServer.storage
+              .from('reports-evidence')
+              .getPublicUrl(filePath)
+            if (publicUrlData?.publicUrl) {
+              finalImageUrl = publicUrlData.publicUrl
+            }
+          } else {
+            console.warn('Could not upload offline base64 image to Supabase storage:', uploadError)
+          }
+        } catch (storageErr) {
+          console.error('Offline storage upload error:', storageErr)
+        }
+      } else {
+        finalImageUrl = image_data.base64.startsWith('data:')
+          ? image_data.base64
+          : `data:${image_data.contentType || 'image/jpeg'};base64,${image_data.base64}`
+      }
+    }
 
     const newReportData = {
       title,
@@ -97,7 +165,7 @@ export async function POST(request: NextRequest) {
       latitude: parseFloat(latitude),
       longitude: parseFloat(longitude),
       address,
-      image_url: image_url || 'https://images.unsplash.com/photo-1584824486509-112e4181ff6b?auto=format&fit=crop&w=800&q=80',
+      image_url: finalImageUrl,
       status: 'pending' as const,
       upvote_count: 0,
       user_id: user_id || null,
