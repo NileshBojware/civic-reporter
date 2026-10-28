@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect } from 'react'
-import { OfflineIndicator } from './OfflineIndicator'
 
 export function PwaRegister() {
   useEffect(() => {
@@ -17,7 +16,5 @@ export function PwaRegister() {
     }
   }, [])
 
-  // OfflineIndicator is rendered here so it's globally available on every page
-  // without touching the layout tree. It returns null when online with no queue.
-  return <OfflineIndicator />
+  return null
 }
