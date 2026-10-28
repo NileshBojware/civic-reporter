@@ -2,14 +2,17 @@
 
 import { useEffect } from 'react'
 import { OfflineIndicator } from './OfflineIndicator'
+import { registerServiceWorkerSync } from '@/lib/syncManager'
 
 export function PwaRegister() {
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
       navigator.serviceWorker
         .register('/sw.js')
-        .then((registration) => {
+        .then(async (registration) => {
           console.log('SheherCare PWA Service Worker registered with scope:', registration.scope)
+          // Register background sync where supported
+          await registerServiceWorkerSync()
         })
         .catch((error) => {
           console.error('SheherCare PWA Service Worker registration failed:', error)

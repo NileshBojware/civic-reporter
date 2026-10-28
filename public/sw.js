@@ -1,86 +1,81 @@
-const CACHE_NAME = 'shehercare-cache-v2'
-const QUEUE_STORE = 'shehercare-report-queue'
-const ASSETS_TO_CACHE = [
+const CACHE_NAME = 'shehercare-cache-v3'
+const DB_NAME = 'shehercare-offline-db'
+const STORE_NAME = 'reports'
+
+const ESSENTIAL_ASSETS = [
   '/',
+  '/report',
+  '/my-reports',
+  '/reports',
+  '/login',
   '/manifest.json',
+  '/logo.png',
+  '/icon.png',
+  '/favicon.ico',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
   'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png'
 ]
 
 // ---------------------------------------------------------------------------
-// Helpers: lightweight IndexedDB queue (no workbox dependency)
+// IndexedDB access within Service Worker
 // ---------------------------------------------------------------------------
-
-function openQueueDb() {
+function openOfflineDb() {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(QUEUE_STORE, 1)
+    const req = indexedDB.open(DB_NAME, 1)
     req.onupgradeneeded = (e) => {
-      e.target.result.createObjectStore('queue', { keyPath: 'id', autoIncrement: true })
+      const db = e.target.result
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' })
+        store.createIndex('sync_status', 'sync_status', { unique: false })
+        store.createIndex('user_id', 'user_id', { unique: false })
+        store.createIndex('created_at', 'created_at', { unique: false })
+      }
     }
     req.onsuccess = (e) => resolve(e.target.result)
     req.onerror = (e) => reject(e.target.error)
   })
 }
 
-async function enqueueRequest(serialized) {
-  const db = await openQueueDb()
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('queue', 'readwrite')
-    tx.objectStore('queue').add(serialized)
-    tx.oncomplete = resolve
-    tx.onerror = (e) => reject(e.target.error)
-  })
-}
-
-async function dequeueAll() {
-  const db = await openQueueDb()
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('queue', 'readwrite')
-    const store = tx.objectStore('queue')
-    const items = []
-    store.openCursor().onsuccess = (e) => {
-      const cursor = e.target.result
-      if (cursor) {
-        items.push(cursor.value)
-        cursor.delete()
-        cursor.continue()
-      } else {
-        resolve(items)
+async function getPendingQueueCount() {
+  try {
+    const db = await openOfflineDb()
+    return new Promise((resolve) => {
+      const tx = db.transaction(STORE_NAME, 'readonly')
+      const store = tx.objectStore(STORE_NAME)
+      const req = store.getAll()
+      req.onsuccess = () => {
+        const all = req.result || []
+        const pendingCount = all.filter(
+          (r) => r.sync_status === 'pending' || r.sync_status === 'failed'
+        ).length
+        resolve(pendingCount)
       }
-    }
-    tx.onerror = (e) => reject(e.target.error)
-  })
+      req.onerror = () => resolve(0)
+    })
+  } catch {
+    return 0
+  }
 }
 
-async function getQueueCount() {
-  const db = await openQueueDb()
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction('queue', 'readonly')
-    const req = tx.objectStore('queue').count()
-    req.onsuccess = () => resolve(req.result)
-    req.onerror = (e) => reject(e.target.error)
-  })
-}
-
-// Broadcast queue count to all open tabs so the UI badge can update
 async function broadcastQueueCount() {
-  const count = await getQueueCount()
+  const count = await getPendingQueueCount()
   const clients = await self.clients.matchAll({ type: 'window' })
-  clients.forEach((client) =>
+  clients.forEach((client) => {
     client.postMessage({ type: 'QUEUE_COUNT', count })
-  )
+    client.postMessage({ type: 'SYNC_STATUS_UPDATE' })
+  })
 }
 
 // ---------------------------------------------------------------------------
-// Install — pre-cache static shell (resilient to CDN / network hiccups)
+// Install — precache essential shell and assets
 // ---------------------------------------------------------------------------
 self.addEventListener('install', (event) => {
   self.skipWaiting()
   event.waitUntil(
     caches.open(CACHE_NAME).then(async (cache) => {
       await Promise.allSettled(
-        ASSETS_TO_CACHE.map((url) =>
+        ESSENTIAL_ASSETS.map((url) =>
           cache.add(url).catch((err) => {
             console.warn('[SW] Could not precache:', url, err)
           })
@@ -91,7 +86,7 @@ self.addEventListener('install', (event) => {
 })
 
 // ---------------------------------------------------------------------------
-// Activate — clean stale caches
+// Activate — delete obsolete caches & claim clients
 // ---------------------------------------------------------------------------
 self.addEventListener('activate', (event) => {
   event.waitUntil(
@@ -105,115 +100,247 @@ self.addEventListener('activate', (event) => {
 })
 
 // ---------------------------------------------------------------------------
-// Fetch — network-first for navigation, cache-first for assets,
-//          offline queue for POST /api/reports
+// Fetch Handler: Network-first for navigation, Cache-first for assets,
+//                 Network-first for GET /api/reports, Offline fallback
 // ---------------------------------------------------------------------------
 self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') {
-    // Queue failed POST /api/reports submissions for background sync
-    if (
-      event.request.method === 'POST' &&
-      event.request.url.includes('/api/reports') &&
-      !event.request.url.includes('/upvote')
-    ) {
-      event.respondWith(
-        fetch(event.request.clone()).catch(async () => {
-          // Network unavailable — serialize and queue the request body
-          try {
-            const body = await event.request.clone().text()
-            await enqueueRequest({
-              url: event.request.url,
-              body,
-              timestamp: Date.now(),
-            })
-            await broadcastQueueCount()
-            // Register for background sync if supported
-            if ('sync' in self.registration) {
-              await self.registration.sync.register('sync-reports')
-            }
-          } catch (err) {
-            console.error('[SW] Failed to queue report:', err)
-          }
-          // Return a synthetic queued response so the page doesn't hard-error
-          return new Response(
-            JSON.stringify({ queued: true, message: 'Report saved offline. Will sync when online.' }),
-            { status: 202, headers: { 'Content-Type': 'application/json' } }
-          )
-        })
-      )
-    }
-    return
-  }
+  const { request } = event
+  const url = new URL(request.url)
 
-  // Network-first for HTML navigation
-  if (event.request.mode === 'navigate') {
+  // 1. Navigation (HTML pages)
+  if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request)
+      fetch(request)
         .then((response) => {
-          const copy = response.clone()
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy))
+          if (response.ok) {
+            const clone = response.clone()
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone))
+          }
           return response
         })
-        .catch(() =>
-          caches.match(event.request).then((cached) => cached || caches.match('/'))
-        )
+        .catch(async () => {
+          const cached = await caches.match(request)
+          if (cached) return cached
+          // Fall back to pre-cached home page shell
+          const rootCached = await caches.match('/')
+          return rootCached || Response.error()
+        })
     )
     return
   }
 
-  // Cache-first for static assets and Leaflet CDN
-  event.respondWith(
-    caches.match(event.request).then((cached) => cached || fetch(event.request))
-  )
-})
+  // 2. GET API reports — cache for offline browsing
+  if (request.method === 'GET' && url.pathname === '/api/reports') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response.ok) {
+            const clone = response.clone()
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, clone))
+          }
+          return response
+        })
+        .catch(async () => {
+          const cached = await caches.match(request)
+          if (cached) return cached
+          return new Response(JSON.stringify([]), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+          })
+        })
+    )
+    return
+  }
 
-// ---------------------------------------------------------------------------
-// Background Sync — replay queued reports when network returns
-// ---------------------------------------------------------------------------
-self.addEventListener('sync', (event) => {
-  if (event.tag === 'sync-reports') {
-    event.waitUntil(replayQueuedReports())
+  // 3. Static assets: _next/static, css, js, fonts, images, unpkg
+  if (
+    request.method === 'GET' &&
+    (url.pathname.startsWith('/_next/static/') ||
+      url.pathname.endsWith('.png') ||
+      url.pathname.endsWith('.jpg') ||
+      url.pathname.endsWith('.svg') ||
+      url.pathname.endsWith('.ico') ||
+      url.pathname.endsWith('.json') ||
+      url.hostname.includes('unpkg.com') ||
+      url.hostname.includes('fonts.googleapis.com') ||
+      url.hostname.includes('fonts.gstatic.com'))
+  ) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) return cached
+
+        return fetch(request)
+          .then((response) => {
+            if (response.ok) {
+              const clone = response.clone()
+              caches.open(CACHE_NAME).then((cache) => cache.put(request, clone))
+            }
+            return response
+          })
+          .catch(() => cached || Response.error())
+      })
+    )
+    return
+  }
+
+  // 4. Default fetch
+  if (request.method === 'GET') {
+    event.respondWith(
+      caches.match(request).then((cached) => cached || fetch(request))
+    )
   }
 })
 
-async function replayQueuedReports() {
-  const queued = await dequeueAll()
-  if (queued.length === 0) return
+// ---------------------------------------------------------------------------
+// Background Sync — automatically replay pending reports when online
+// ---------------------------------------------------------------------------
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-reports' || event.tag === 'sync-civic-reports') {
+    event.waitUntil(replayOfflineReports())
+  }
+})
 
-  await Promise.allSettled(
-    queued.map(async (item) => {
+async function replayOfflineReports() {
+  try {
+    const db = await openOfflineDb()
+    const pendingReports = await new Promise((resolve) => {
+      const tx = db.transaction(STORE_NAME, 'readonly')
+      const store = tx.objectStore(STORE_NAME)
+      const req = store.getAll()
+      req.onsuccess = () => {
+        const all = req.result || []
+        const pending = all.filter(
+          (r) => r.sync_status === 'pending' || r.sync_status === 'failed'
+        )
+        resolve(pending)
+      }
+      req.onerror = () => resolve([])
+    })
+
+    if (pendingReports.length === 0) {
+      await broadcastQueueCount()
+      return
+    }
+
+    let successCount = 0
+
+    for (const report of pendingReports) {
+      // Mark report as syncing
+      await new Promise((resolve) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite')
+        const store = tx.objectStore(STORE_NAME)
+        const updated = { ...report, sync_status: 'syncing', updated_at: new Date().toISOString() }
+        store.put(updated)
+        tx.oncomplete = resolve
+      })
+
       try {
-        const res = await fetch(item.url, {
+        const payload = {
+          title: report.title,
+          description: report.description,
+          category: report.category,
+          latitude: report.latitude,
+          longitude: report.longitude,
+          address: report.address,
+          user_id: report.user_id,
+          client_id: report.id,
+          image_url: report.image_url,
+        }
+
+        if (report.image_base64) {
+          payload.image_data = {
+            base64: report.image_base64,
+            contentType: report.image_contentType || 'image/jpeg',
+            fileName: report.image_fileName || `offline_${Date.now()}.jpg`,
+          }
+        }
+
+        const res = await fetch('/api/reports', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: item.body,
+          body: JSON.stringify(payload),
         })
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+
+        if (!res.ok) {
+          throw new Error(`Server returned HTTP ${res.status}`)
+        }
+
+        const data = await res.json()
+
+        // Update report status in IndexedDB to synced
+        await new Promise((resolve) => {
+          const tx = db.transaction(STORE_NAME, 'readwrite')
+          const store = tx.objectStore(STORE_NAME)
+          const updated = {
+            ...report,
+            sync_status: 'synced',
+            supabase_id: data.id,
+            image_url: data.image_url || report.image_url,
+            sync_error: null,
+            updated_at: new Date().toISOString(),
+          }
+          store.put(updated)
+          tx.oncomplete = resolve
+        })
+
+        successCount++
       } catch (err) {
-        // Re-queue on failure so it isn't lost
-        await enqueueRequest(item)
-        throw err
+        // Mark as failed so it can be retried
+        await new Promise((resolve) => {
+          const tx = db.transaction(STORE_NAME, 'readwrite')
+          const store = tx.objectStore(STORE_NAME)
+          const updated = {
+            ...report,
+            sync_status: 'failed',
+            sync_error: err?.message || 'Upload failed',
+            retry_count: (report.retry_count || 0) + 1,
+            updated_at: new Date().toISOString(),
+          }
+          store.put(updated)
+          tx.oncomplete = resolve
+        })
       }
+    }
+
+    await broadcastQueueCount()
+
+    // Notify clients that sync finished
+    const clients = await self.clients.matchAll({ type: 'window' })
+    clients.forEach((client) => {
+      client.postMessage({ type: 'SYNC_COMPLETE', count: successCount })
+      client.postMessage({ type: 'SYNC_STATUS_UPDATE' })
     })
-  )
-
-  await broadcastQueueCount()
-
-  // Notify open tabs that sync completed
-  const clients = await self.clients.matchAll({ type: 'window' })
-  clients.forEach((client) =>
-    client.postMessage({ type: 'SYNC_COMPLETE' })
-  )
+  } catch (err) {
+    console.error('[SW] Replay offline reports failed:', err)
+  }
 }
 
 // ---------------------------------------------------------------------------
-// Message handler — allow pages to request the current queue count
+// Message handler
 // ---------------------------------------------------------------------------
 self.addEventListener('message', async (event) => {
   if (event.data?.type === 'GET_QUEUE_COUNT') {
-    const count = await getQueueCount()
-    event.source.postMessage({ type: 'QUEUE_COUNT', count })
+    const count = await getPendingQueueCount()
+    if (event.source) {
+      event.source.postMessage({ type: 'QUEUE_COUNT', count })
+    }
   }
+
+  if (event.data?.type === 'QUEUE_OFFLINE_REPORT') {
+    await broadcastQueueCount()
+    if ('sync' in self.registration) {
+      try {
+        await self.registration.sync.register('sync-civic-reports')
+      } catch (e) {
+        console.warn('[SW] Could not register sync tag:', e)
+      }
+    }
+  }
+
+  if (event.data?.type === 'SYNC_NOW') {
+    await replayOfflineReports()
+  }
+
   if (event.data?.type === 'SHOW_TEST_NOTIFICATION') {
     self.registration.showNotification(event.data.title || 'SheherCare', {
       body: event.data.body || 'Push notifications are enabled and working properly!',
@@ -228,7 +355,7 @@ self.addEventListener('message', async (event) => {
 })
 
 // ---------------------------------------------------------------------------
-// Push Notifications — receive payload sent by /api/push/send
+// Push Notifications
 // ---------------------------------------------------------------------------
 self.addEventListener('push', (event) => {
   if (!event.data) return
@@ -255,7 +382,7 @@ self.addEventListener('push', (event) => {
 })
 
 // ---------------------------------------------------------------------------
-// Notification Click — open / focus the relevant report page
+// Notification Click
 // ---------------------------------------------------------------------------
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
@@ -264,13 +391,11 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      // If a tab is already open on the target URL, focus it
       for (const client of clients) {
         if (client.url.includes(targetUrl) && 'focus' in client) {
           return client.focus()
         }
       }
-      // Otherwise open a new tab
       if (self.clients.openWindow) {
         return self.clients.openWindow(targetUrl)
       }

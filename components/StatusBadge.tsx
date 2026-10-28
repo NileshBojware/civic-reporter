@@ -1,11 +1,23 @@
 'use client'
 
 import React from 'react'
-import { AlertCircle, CheckCircle2, Clock, Play, ShieldCheck } from 'lucide-react'
+import { AlertCircle, CheckCircle2, Clock, Play, ShieldCheck, RefreshCw, CloudOff } from 'lucide-react'
 import { useLanguage } from '@/lib/LanguageContext'
 
+export type ReportStatusType =
+  | 'pending'
+  | 'verified'
+  | 'in_progress'
+  | 'resolved'
+  | 'rejected'
+  | 'syncing'
+  | 'synced'
+  | 'failed'
+  | 'pending_sync'
+  | string
+
 interface StatusBadgeProps {
-  status: 'pending' | 'verified' | 'in_progress' | 'resolved' | 'rejected'
+  status: ReportStatusType
 }
 
 export function StatusBadge({ status }: StatusBadgeProps) {
@@ -47,7 +59,72 @@ export function StatusBadge({ status }: StatusBadgeProps) {
           <span>{t('status.rejected')}</span>
         </span>
       )
+    case 'pending_sync':
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-pill text-caption font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25 shrink-0">
+          <Clock className="w-3.5 h-3.5" />
+          <span>Pending Sync</span>
+        </span>
+      )
+    case 'syncing':
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-pill text-caption font-semibold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/25 shrink-0">
+          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+          <span>Syncing...</span>
+        </span>
+      )
+    case 'synced':
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-pill text-caption font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 shrink-0">
+          <CheckCircle2 className="w-3.5 h-3.5" />
+          <span>Synced</span>
+        </span>
+      )
+    case 'failed':
+      return (
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-pill text-caption font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25 shrink-0">
+          <AlertCircle className="w-3.5 h-3.5" />
+          <span>Failed</span>
+        </span>
+      )
     default:
       return null
+  }
+}
+
+interface SyncStatusBadgeProps {
+  status: 'pending' | 'syncing' | 'synced' | 'failed'
+}
+
+export function SyncStatusBadge({ status }: SyncStatusBadgeProps) {
+  switch (status) {
+    case 'pending':
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-pill text-[11px] font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25 shrink-0">
+          <Clock className="w-3 h-3" />
+          <span>Pending</span>
+        </span>
+      )
+    case 'syncing':
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-pill text-[11px] font-semibold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/25 shrink-0">
+          <RefreshCw className="w-3 h-3 animate-spin" />
+          <span>Syncing</span>
+        </span>
+      )
+    case 'synced':
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-pill text-[11px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/25 shrink-0">
+          <CheckCircle2 className="w-3 h-3" />
+          <span>Synced</span>
+        </span>
+      )
+    case 'failed':
+      return (
+        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-pill text-[11px] font-semibold bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/25 shrink-0">
+          <AlertCircle className="w-3 h-3" />
+          <span>Failed</span>
+        </span>
+      )
   }
 }

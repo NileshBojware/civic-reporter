@@ -26,6 +26,8 @@ import { getDepartmentByCategory } from '@/lib/departments'
 import { VoiceInputButton } from '@/components/VoiceInputButton'
 import { classifyImageWithStatus, ClassificationResult, resizeImageForAI, fileToBase64 } from '@/lib/imageClassifier'
 import { getLocalizedDepartment, getLocalizedSubcategory } from '@/lib/contentTranslator'
+import { saveOfflineReport } from '@/lib/offlineStorage'
+import { CloudOff } from 'lucide-react'
 
 
 export default function ReportPage() {
@@ -33,6 +35,7 @@ export default function ReportPage() {
   const [user, setUser] = useState<any>(null)
   const [profile, setProfile] = useState<any>(null)
   const [loadingAuth, setLoadingAuth] = useState(true)
+  const [isOnline, setIsOnline] = useState(true)
   const { t, language } = useLanguage()
 
   // Form State
@@ -86,28 +89,56 @@ export default function ReportPage() {
   const [bypassDuplicates, setBypassDuplicates] = useState(false)
 
   useEffect(() => {
-    const checkAuth = async () => {
-      if (isSupabaseConfigured && supabase) {
-        const { data } = await supabase.auth.getSession()
-        const currentUser = data.session?.user || null
-        setUser(currentUser)
-        if (currentUser) {
-          const { data: prof } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', currentUser.id)
-            .maybeSingle()
-          setProfile(prof)
-        }
-      } else {
-        const mockUserStr = localStorage.getItem('civic_reporter_user')
-        if (mockUserStr) {
-          const mockUser = JSON.parse(mockUserStr)
-          setUser(mockUser)
-          setProfile(mockUser)
-        }
+    if (typeof window !== 'undefined') {
+      setIsOnline(navigator.onLine)
+      const handleOnline = () => setIsOnline(true)
+      const handleOffline = () => setIsOnline(false)
+      window.addEventListener('online', handleOnline)
+      window.addEventListener('offline', handleOffline)
+      return () => {
+        window.removeEventListener('online', handleOnline)
+        window.removeEventListener('offline', handleOffline)
       }
-      setLoadingAuth(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        if (isSupabaseConfigured && supabase) {
+          const { data } = await supabase.auth.getSession()
+          const currentUser = data.session?.user || null
+          setUser(currentUser)
+          if (currentUser) {
+            try {
+              const { data: prof } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', currentUser.id)
+                .maybeSingle()
+              setProfile(prof)
+            } catch {
+              // Graceful fallback when offline
+              setProfile({
+                id: currentUser.id,
+                full_name: currentUser.user_metadata?.full_name || 'Citizen',
+                role: 'citizen',
+              })
+            }
+          }
+        } else {
+          const mockUserStr = localStorage.getItem('civic_reporter_user')
+          if (mockUserStr) {
+            const mockUser = JSON.parse(mockUserStr)
+            setUser(mockUser)
+            setProfile(mockUser)
+          }
+        }
+      } catch (authErr) {
+        console.warn('Auth check handled offline error:', authErr)
+      } finally {
+        setLoadingAuth(false)
+      }
     }
     checkAuth()
   }, [])
@@ -431,6 +462,12 @@ export default function ReportPage() {
   const triggerDuplicateCheck = async () => {
     if (!category || !latitude || !longitude) return
 
+    // If offline, bypass duplicate check so user can submit without internet
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setBypassDuplicates(true)
+      return
+    }
+
     try {
       const res = await fetch(
         `/api/reports?duplicateCheck=true&category=${category}&latitude=${latitude}&longitude=${longitude}`
@@ -473,6 +510,43 @@ export default function ReportPage() {
     setError('')
     setSubmitting(true)
 
+    const isCurrentlyOffline = typeof navigator !== 'undefined' && !navigator.onLine
+
+    // 1. If currently offline: Save to IndexedDB immediately
+    if (isCurrentlyOffline) {
+      try {
+        await saveOfflineReport({
+          user_id: user?.id || 'anonymous',
+          title,
+          description,
+          category,
+          latitude,
+          longitude,
+          address,
+          photoUrl,
+          photoFile: photo,
+        })
+
+        confetti({
+          particleCount: 150,
+          spread: 80,
+          origin: { y: 0.6 },
+          colors: ['#f59e0b', '#00bf63', '#177f95'],
+        })
+
+        alert('You are offline. Your report has been saved safely on this device and will automatically sync once internet connection is restored!')
+        router.push('/my-reports')
+        router.refresh()
+        return
+      } catch (saveErr: any) {
+        setError(saveErr?.message || 'Failed to save offline report.')
+        return
+      } finally {
+        setSubmitting(false)
+      }
+    }
+
+    // 2. If online: Try submitting directly to Supabase / API
     try {
       let finalImageUrl = photoUrl
 
@@ -525,7 +599,44 @@ export default function ReportPage() {
       router.push('/my-reports')
       router.refresh()
     } catch (err: any) {
-      setError(err.message || 'Failed to save issue report. Please try again.')
+      // 3. Fallback: If network dropped mid-submission, safely save to IndexedDB
+      const isNetworkErr =
+        (typeof navigator !== 'undefined' && !navigator.onLine) ||
+        err?.message?.toLowerCase().includes('failed to fetch') ||
+        err?.message?.toLowerCase().includes('network') ||
+        err?.message?.toLowerCase().includes('offline')
+
+      if (isNetworkErr) {
+        try {
+          await saveOfflineReport({
+            user_id: user?.id || 'anonymous',
+            title,
+            description,
+            category,
+            latitude,
+            longitude,
+            address,
+            photoUrl,
+            photoFile: photo,
+          })
+
+          confetti({
+            particleCount: 150,
+            spread: 80,
+            origin: { y: 0.6 },
+            colors: ['#f59e0b', '#00bf63', '#177f95'],
+          })
+
+          alert('Network connection interrupted during submission. Your report has been safely saved offline and will automatically upload when reconnected!')
+          router.push('/my-reports')
+          router.refresh()
+          return
+        } catch (saveErr: any) {
+          setError(saveErr?.message || 'Failed to save offline report.')
+        }
+      } else {
+        setError(err.message || 'Failed to save issue report. Please try again.')
+      }
     } finally {
       setSubmitting(false)
     }
@@ -1107,13 +1218,27 @@ export default function ReportPage() {
         )}
 
         {/* Submit Block */}
-        <div className="flex justify-end pt-4">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
+          {!isOnline ? (
+            <div className="flex items-center gap-2 text-caption font-semibold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-3 py-1.5 rounded-md border border-amber-500/20">
+              <CloudOff className="w-4 h-4 shrink-0" />
+              <span>Offline Mode: Report will be saved locally & synced when online.</span>
+            </div>
+          ) : (
+            <div />
+          )}
+
           <button
             type="submit"
             disabled={submitting || compressing || (duplicates.length > 0 && !bypassDuplicates)}
-            className="btn-primary w-full md:w-auto px-10 h-12 text-body-sm shadow-sm"
+            className="btn-primary w-full md:w-auto px-10 h-12 text-body-sm shadow-sm flex items-center justify-center gap-2"
           >
-            {submitting ? t('form.btnSubmitting') : t('form.btnSubmit')}
+            {!isOnline && <CloudOff className="w-4 h-4" />}
+            {submitting
+              ? t('form.btnSubmitting')
+              : !isOnline
+              ? 'Save Report (Offline)'
+              : t('form.btnSubmit')}
           </button>
         </div>
       </form>
