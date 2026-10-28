@@ -37,10 +37,6 @@ export const translations: Record<Language, Record<string, string>> = {
     'status.in_progress': 'In Progress',
     'status.resolved': 'Resolved',
     'status.rejected': 'Rejected',
-    'status.syncing': 'Syncing...',
-    'status.synced': 'Synced',
-    'status.failed': 'Sync Failed',
-    'status.pending_sync': 'Pending Sync',
 
     // Categories
     'category.roads_transport': 'Roads & Transport',
